@@ -12,23 +12,23 @@ import CloseIcon from '@mui/icons-material/Close';
 
 // Datos de categorías y marcas
 export const categorias = [
-    { nombre: 'Frenos', imageUrl: 'https://via.placeholder.com/200x150?text=Toyota' },
-    { nombre: 'Motor', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Eléctrico', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Suspensión', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Transmisión', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Carrocería', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Refrigeración', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Escape', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
+    { nombre: 'Frenos', imageUrl: 'https://img.freepik.com/fotos-premium/sistema-frenos-disco-freno-coche-pinza-aislado-sobre-fondo-blanco_708636-433.jpg' },
+    { nombre: 'Motor', imageUrl: '	https://as1.ftcdn.net/v2/jpg/08/88/36/22/1000_F_888362297_gmDqHowGPe4Luk8CI7TOr3jYKG4ognSB.jpg' },
+    { nombre: 'Eléctrico', imageUrl: 'https://as1.ftcdn.net/v2/jpg/08/60/45/44/1000_F_860454407_7v24BykanIJYmRR2WTARPrlfWjOqOLCs.jpg' },
+    { nombre: 'Suspensión', imageUrl: 'https://as2.ftcdn.net/v2/jpg/01/29/37/69/1000_F_129376964_8yGskWA0GxqOTjn9jmf0EzXjEAHDdPhb.jpg' },
+    { nombre: 'Transmisión', imageUrl: '	https://as1.ftcdn.net/v2/jpg/04/59/19/90/1000_F_459199042_8SRpQjSsz5RGyutk0ZM0nscM0lKYPkr5.jpg' },
+    { nombre: 'Carrocería', imageUrl: 'https://as1.ftcdn.net/v2/jpg/00/12/33/76/1000_F_12337609_4LQkQteGlsfTQVpFUTAcdFCSLQOI9io3.jpg' },
+    { nombre: 'Refrigeración', imageUrl: 'https://as2.ftcdn.net/v2/jpg/04/57/25/23/1000_F_457252397_P79Knbn6ueRcv4wOwnJHbeUkfYg7iaCf.jpg' },
+    { nombre: 'Escape', imageUrl: '	https://img.freepik.com/vector-premium/silenciador-pieza-coche-tubo-escape-vector_272963-322.jpg' },
 
     // Más categorías...
 ];
 
 export const marcas = [
-    { nombre: 'Toyota', imageUrl: 'https://via.placeholder.com/200x150?text=Toyota' },
-    { nombre: 'jeep', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Chevrolet', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
-    { nombre: 'Honda', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
+    { nombre: 'Toyota', imageUrl: 'https://www.diariomotor.com/imagenes/2022/11/logo-de-toyota-6376f7ae393e5-1280x720.webp' },
+    { nombre: 'jeep', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeiVT1uEyXq3jvQ2NsqR5rqpZc-e4tO-mOoQ&s' },
+    { nombre: 'Chevrolet', imageUrl: 'https://www.shutterstock.com/image-vector/chattogram-bangladesh-may-29-2023-600nw-2309781029.jpg' },
+    { nombre: 'Honda', imageUrl: 'https://thumbs.dreamstime.com/b/logotipo-del-vecto…-imprimir-viajes-y-autom%C3%B3viles-183281772.jpg' },
     { nombre: 'Ford', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
     { nombre: 'Nissan', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
     { nombre: 'Volkswagen', imageUrl: 'https://via.placeholder.com/200x150?text=Honda' },
@@ -85,6 +85,7 @@ function ProductList() {
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                 AutosAnalítica
             </Typography>
+
             {/* Sección de Categorías */}
             <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 3, mb: 4 }}>
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#333' }}>
@@ -93,10 +94,25 @@ function ProductList() {
                 <Slider {...carouselSettings}>
                     {categorias.map((categoria, index) => (
                         <Box key={index} sx={{ p: 1 }}>
-                            <Card onClick={() => handleCategoriaClick(categoria.nombre)} sx={{ cursor: 'pointer' }}>
-                                <CardMedia component="img" height="150" image={categoria.imageUrl} alt={categoria.nombre} />
-                                <CardContent>
-                                    <Typography variant="subtitle1" textAlign="center">{categoria.nombre}</Typography>
+                        <Card 
+                            onClick={() => handleCategoriaClick(categoria.nombre)} 
+                            sx={{ cursor: 'pointer', height: 250, width: 200 }}  
+                            
+                        >
+                            {/* Tamaño uniforme para todas las tarjetas */}
+                                <CardMedia
+                                    component="img"
+                                    height="150"
+                                    image={categoria.imageUrl}
+                                    alt={categoria.nombre}
+                                    sx={{
+                                        objectFit: 'contain',  // Ajusta la imagen sin recortarla
+                                        width: '100%',         // Asegura que ocupe el ancho completo del CardMedia
+                                        height: '180px',       // Altura fija para todas las imágenes
+                                    }}
+                                />
+                                <CardContent sx={{ textAlign: 'center' }}>
+                                    <Typography variant="subtitle1">{categoria.nombre}</Typography>
                                 </CardContent>
                             </Card>
                         </Box>
@@ -111,11 +127,25 @@ function ProductList() {
                 </Typography>
                 <Slider {...carouselSettings}>
                     {marcas.map((marca, index) => (
-                        <Box key={index} sx={{ p: 1 }}>
-                            <Card onClick={() => handleMarcaClick(marca.nombre)} sx={{ cursor: 'pointer' }}>
-                                <CardMedia component="img" height="150" image={marca.imageUrl} alt={marca.nombre} />
-                                <CardContent>
-                                    <Typography variant="subtitle1" textAlign="center">{marca.nombre}</Typography>
+                        <Box key={index} sx={{ p: 1, width: 200 }}>  
+                            {/* Establece un ancho fijo para las tarjetas */}
+                            <Card 
+                                onClick={() => handleMarcaClick(marca.nombre)} 
+                                sx={{p: 1, cursor: 'pointer', height: 250, width: 200 }}  
+                            >
+                                <CardMedia
+                                    component="img"
+                                    height="150"
+                                    image={marca.imageUrl}
+                                    alt={marca.nombre}
+                                    sx={{
+                                        objectFit: 'contain',  // Ajusta la imagen sin recortarla
+                                        width: '100%',         // Asegura que ocupe el ancho completo del CardMedia
+                                        height: '150px',       // Altura fija para todas las imágenes
+                                    }}
+                                />
+                                <CardContent sx={{ textAlign: 'center' }}>
+                                    <Typography variant="subtitle1">{marca.nombre}</Typography>
                                 </CardContent>
                             </Card>
                         </Box>

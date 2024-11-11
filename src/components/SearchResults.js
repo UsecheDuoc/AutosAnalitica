@@ -1,7 +1,7 @@
 // src/components/SearchResults.js
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Container, Typography, Grid, Card, CardMedia, CardContent, Box, Select, MenuItem, FormControl, InputLabel, Pagination, Paper, Alert } from '@mui/material';
+import { Container, Typography, Grid, Card, CardMedia, CardContent,Checkbox, Box, Select, MenuItem, FormControl, InputLabel, Button, Pagination, Paper } from '@mui/material';
 import axios from 'axios';
 import { Link } from 'react-router-dom';  // Asegúrate de importar Link
 
@@ -14,127 +14,369 @@ function SearchResults() {
     const searchTerm = query.get("q");
     const navigate = useNavigate();
     const [productos, setProductos] = useState([]);
-    const [error, setError] = useState(null); // Estado para manejar el mensaje de error
     const [page, setPage] = useState(1);
     const productsPerPage = 20;
     const [sortOrder, setSortOrder] = useState('');
-    const [filter, setFilter] = useState('');
+    const [brandFilter, setBrandFilter] = useState('');
+    const [modelFilter, setModelFilter] = useState('');
+    const [discountFilter, setDiscountFilter] = useState('');
+    const [storeFilter, setStoreFilter] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [modelosDisponibles, setModelosDisponibles] = useState([]);
+    const [marcas, setMarcas] = useState([]); // Lista de marcas disponibles
+    const [compareMode, setCompareMode] = useState(false);
+    const [selectedProducts, setSelectedProducts] = useState([]);
+    const [openModal, setOpenModal] = useState(false);
+    const [modelos, setModelos] = useState([]); // Lista de modelos específicos según la marca seleccionada
 
+    // Llama a applyFilters cada vez que cambie un filtro
     useEffect(() => {
-        fetchProducts();
-    }, [searchTerm, filter, sortOrder]);
+        applyFilters();
+    }, [searchTerm, brandFilter, modelFilter, discountFilter, storeFilter, categoryFilter, sortOrder]);
+    
+    
+
+
 
     const fetchProducts = () => {
-        setError(null); // Reiniciar el error antes de hacer una nueva solicitud
+        setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
         axios.get(`http://localhost:3000/api/productos/buscar-similares`, {
             params: {
-                nombre: searchTerm,
-                filter: filter,
-                sortOrder: sortOrder
+                nombre: searchTerm, // Solo aplicar la búsqueda en el nombre
+                marca: brandFilter || undefined,
+                //modelo: modelFilter || undefined,
+                categoria: categoryFilter || undefined,
+                descuento: discountFilter || undefined,
+                tienda: storeFilter || undefined
             }
         })
         .then(response => {
+            console.log("Productos recibidos:", response.data);
             setProductos(response.data);
             if (response.data.length === 0) {
-                setError("No se encontraron productos que coincidan con la búsqueda.");
+                setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
             }
         })
         .catch(error => {
             console.error("Error al obtener productos:", error);
-            setError(error.response?.data?.message || "Error al obtener productos de la API.");
+            setErrorMessage(error.response?.data?.message || "Error al obtener productos de la API.");
         });
     };
-
+    
+    
     const handlePageChange = (event, value) => setPage(value);
-    const handleSortChange = (event) => setSortOrder(event.target.value);
-    const handleFilterChange = (event) => setFilter(event.target.value);
 
+    
+    const handleBrandChange = async (event) => {
+        const selectedBrand = event.target.value;
+        setBrandFilter(selectedBrand);
+        setBrandFilter(selectedBrand);
+        setModelFilter(''); // Reinicia el filtro de modelo cuando cambia la marca
+        fetchModelosPorMarca(selectedBrand); // Carga los modelos basados en la marca seleccionada
+        applyFilters(); // Aplica los filtros después de seleccionar la marca
+        // Llama a la API para obtener los modelos de la marca seleccionada
+        if (selectedBrand) {
+            try {
+                const response = await axios.get(`http://localhost:3000/api/productos/modelos`, {
+                    params: { marca: selectedBrand }
+                });
+                setModelosDisponibles(response.data); // Actualizar la lista de modelos disponibles
+            } catch (error) {
+                console.error("Error al obtener modelos:", error);
+                setModelosDisponibles([]); // Limpiar modelos en caso de error
+            }
+        } else {
+            setModelosDisponibles([]); // Limpiar modelos si no hay marca seleccionada
+        }
+    
+        applyFilters(); // Aplicar filtros después de seleccionar la marca
+    };
+    
+    
+    const handleModelChange = (event) => {
+        setModelFilter(event.target.value);
+        applyFilters(); // Llama a applyFilters después de actualizar el filtro de modelo
+    };
+    
+    const handleDiscountChange = (event) => {
+        setDiscountFilter(event.target.value);
+        applyFilters(); // Llama a applyFilters después de actualizar el filtro de descuento
+    };
+    
+    const handleStoreChange = (event) => {
+        setStoreFilter(event.target.value);
+        applyFilters(); // Llama a applyFilters después de actualizar el filtro de tienda
+    };
+    
+    const handleCategoryChange = (event) => {
+        setCategoryFilter(event.target.value);
+        applyFilters(); // Llama a applyFilters después de actualizar el filtro de categoría
+    };
+    
+    const handleSortChange = (event) => {
+        setSortOrder(event.target.value);
+        applyFilters(); // Llama a applyFilters después de actualizar el orden
+    };
+    
+    const fetchModelosPorMarca = async (marca) => {
+        try {
+            const response = await axios.get(`http://localhost:3000/api/productos/modelos`, { params: { marca } });
+            
+            // Filtra los modelos únicos
+            const modelosUnicos = [...new Set(response.data.map((producto) => producto.modelo))];
+            
+            setModelosDisponibles(modelosUnicos); // Establece los modelos disponibles
+        } catch (error) {
+            console.error("Error al obtener modelos:", error);
+            setModelosDisponibles([]); // En caso de error, establece modelos como vacío
+        }
+    };
+    
+    const handleShowComparison = () => {
+        if (selectedProducts.length >= 2) {
+            setOpenModal(true);
+        } else {
+            alert("Selecciona al menos 2 productos para comparar.");
+        }
+    };
     const paginatedProducts = productos.slice((page - 1) * productsPerPage, page * productsPerPage);
+
+    const handleCompareToggle = () => {
+        setCompareMode(!compareMode);
+        setSelectedProducts([]);
+    };
+    const [errorMessage, setErrorMessage] = useState(null);
+
+    const handleSelectProduct = (producto) => {
+        if (selectedProducts.includes(producto)) {
+            setSelectedProducts(selectedProducts.filter((p) => p !== producto));
+        } else if (selectedProducts.length < 3) {
+            setSelectedProducts([...selectedProducts, producto]);
+        } else {
+            alert("Solo puedes comparar hasta 3 productos.");
+        }
+    };
+
+    const applyFilters = () => {
+        setErrorMessage(null); // Reiniciar el mensaje de error antes de aplicar filtros
+
+        const params = {
+            nombre: searchTerm,
+            marca: brandFilter || undefined,
+            modelo: modelFilter || undefined,
+            categoria: categoryFilter || undefined,
+            descuento: discountFilter || undefined,
+            tienda: storeFilter || undefined,
+            sortOrder: sortOrder || undefined,
+        };
+    
+        console.log("Aplicando filtros:", params); // Verifica los filtros en la consola
+        fetchProducts(params); // Envía los filtros a fetchProducts    };
+    };
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Typography variant="h4" sx={{ mb: 4, color: '#003366', fontWeight: 'bold' }}>
-            Results for "{searchTerm}"
-        </Typography>
-
-        {error && (
-            <Typography color="error" sx={{ mb: 2 }}>
-                {error}
+            <Typography variant="h4" sx={{ mb: 4, color: '#003366', fontWeight: 'bold' }}>
+                Results for "{searchTerm}"
             </Typography>
-        )}
 
-        <Grid container spacing={3}>
-            {/* Filtro en el lado izquierdo */}
-            <Grid item xs={12} md={3}>
-                <Paper elevation={3} sx={{ p: 2, bgcolor: '#f9f9f9' }}>
-                    <Typography variant="h6" sx={{ mb: 2 }}>Filtros</Typography>
-                    <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                        <InputLabel>Filtrar</InputLabel>
-                        <Select value={filter} onChange={handleFilterChange} label="Filtrar">
-                            <MenuItem value="inStock">En Stock</MenuItem>
-                            <MenuItem value="outOfStock">Agotado</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Paper>
-            </Grid>
 
-            {/* Productos y Ordenación */}
-            <Grid item xs={12} md={9}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                    <FormControl variant="outlined" sx={{ minWidth: 150 }}>
-                        <InputLabel>Ordenar por</InputLabel>
-                        <Select value={sortOrder} onChange={handleSortChange} label="Ordenar por">
-                            <MenuItem value="priceAsc">Precio: Menor a Mayor</MenuItem>
-                            <MenuItem value="priceDesc">Precio: Mayor a Menor</MenuItem>
-                            <MenuItem value="nameAsc">Nombre: A-Z</MenuItem>
-                            <MenuItem value="nameDesc">Nombre: Z-A</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
 
-                <Grid container spacing={3}>
-                    {paginatedProducts.map((producto) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
-                            <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none' }}>
-                                <Card
-                                    sx={{ bgcolor: '#f9f9f9', maxWidth: 300, boxShadow: 3, cursor: 'pointer' }}
-                                >
-                                    <CardMedia
-                                        component="img"
-                                        height="200"
-                                        width="200"
-                                        image={producto.imagenUrl || 'https://via.placeholder.com/200'}
-                                        alt={producto.nombre}
-                                        sx={{ objectFit: 'cover' }}
-                                    />
-                                    <CardContent>
-                                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                            {producto.nombre}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {producto.descripcion}
-                                        </Typography>
-                                        <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
-                                            ${producto.precio_actual}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        </Grid>
-                    ))}
+            <Grid container spacing={3}>
+                
+                {/* Filtro en el lado izquierdo */}
+                <Grid item xs={12} md={3}>
+                    <Paper elevation={3} sx={{ p: 2, bgcolor: '#f9f9f9' }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Filtros</Typography>
+
+                        {/* Filtro por Marca */}
+                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Marca</InputLabel>
+                            <Select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)} label="Marca">
+                            <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
+                            {marcas && marcas.length > 0 && marcas.map((marca, index) => (
+                                <MenuItem key={index} value={marca}>{marca}</MenuItem>
+                            ))}                                
+                                <MenuItem value="Toyota">Toyota</MenuItem>
+                                <MenuItem value="jeep">Jeep</MenuItem>
+                                <MenuItem value="Chevrolet">Chevrolet</MenuItem>
+                                <MenuItem value="Honda">Honda</MenuItem>
+                                <MenuItem value="Ford">Ford</MenuItem>
+                                <MenuItem value="Nissan">Nissan</MenuItem>
+                                <MenuItem value="Volkswagen">Volkswagen</MenuItem>
+                                <MenuItem value="Hyundai">Hyundai</MenuItem>
+                                <MenuItem value="BMW">BMW</MenuItem>
+                                <MenuItem value="Audi">Audi</MenuItem>
+                                {/* Agrega más marcas aquí */}
+
+                            </Select>
+                        </FormControl>
+
+                        {/* Filtro por Modelo */}
+                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Modelo</InputLabel>
+                            <Select value={modelFilter} onChange={(event) => setModelFilter(event.target.value)} label="Modelo">
+                            <MenuItem value="">Ninguno</MenuItem> {/* Opción para limpiar el filtro */}
+                            {modelosDisponibles.map((modelo, index) => (
+                                <MenuItem key={index} value={modelo}>{modelo}</MenuItem>
+                            ))}
+                            </Select>
+                        </FormControl>
+
+
+                        {/* Filtro por Descuento */}
+                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Descuento</InputLabel>
+                            <Select value={discountFilter} onChange={handleDiscountChange} label="Descuento">
+                                <MenuItem value={10}>10% o más</MenuItem>
+                                <MenuItem value={20}>20% o más</MenuItem>
+                                <MenuItem value={30}>30% o más</MenuItem>
+                                {/* Agrega más niveles de descuento aquí */}
+                                <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
+
+                            </Select>
+                        </FormControl>
+
+                        {/* Filtro por Tienda */}
+                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Tienda</InputLabel>
+                            <Select value={storeFilter} onChange={handleStoreChange} label="Tienda">
+                                <MenuItem value="Paris">Paris</MenuItem>
+                                <MenuItem value="Falabella">Falabella</MenuItem>
+                                <MenuItem value="">Ninguno</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {/* Filtro por Categoría */}
+                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel>Categoría</InputLabel>
+                            <Select value={categoryFilter} onChange={handleCategoryChange} label="Categoría">
+                            <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
+                                <MenuItem value="Frenos">Frenos</MenuItem>
+                                <MenuItem value="Motor">Motor</MenuItem>
+                                <MenuItem value="Eléctrico">Eléctrico</MenuItem>
+                                <MenuItem value="Suspensión">Suspensión</MenuItem>
+                                <MenuItem value="Transmisión">Transmisión</MenuItem>
+                                <MenuItem value="Carrocería">Carrocería</MenuItem>
+                                <MenuItem value="Refrigeración">Refrigeración</MenuItem>
+                                <MenuItem value="Escape">Escape</MenuItem>
+
+
+                            </Select>
+                        </FormControl>
+                        {/* Botón de comparar o mostrar comparación */}
+                        {compareMode ? (
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                fullWidth
+                                sx={{ mt: 2 }}
+                                onClick={handleShowComparison}
+                                disabled={selectedProducts.length < 2} // Habilita el botón si hay al menos 2 productos seleccionados
+                            >
+                                Mostrar Comparación
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                sx={{ mt: 2 }}
+                                onClick={handleCompareToggle}
+                            >
+                                Comparar productos
+                            </Button>
+                        )}
+
+                        {/* Enlace para cancelar comparación */}
+                        {compareMode && (
+                            <Typography
+                                variant="body2"
+                                color="primary"
+                                sx={{ mt: 1, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}
+                                onClick={handleCompareToggle}
+                            >
+                                Cancelar comparación
+                            </Typography>
+                        )}
+                    </Paper>
                 </Grid>
 
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                    <Pagination
-                        count={Math.ceil(productos.length / productsPerPage)}
-                        page={page}
-                        onChange={handlePageChange}
-                        color="primary"
-                    />
-                </Box>
+                {/* Columna de productos y ordenación */}
+                <Grid item xs={12} md={9}>      
+                    {errorMessage ? (
+                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                            <Typography variant="h6" color="error">
+                                {errorMessage}
+                            </Typography>
+                        </Box>
+                    ) : (
+                    <>
+                    {/* Listado de productos */}
+                    <Grid container spacing={3}>
+                        {productos.length > 0 ? (
+                            paginatedProducts.map((producto) => (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
+                                    <Card
+                                        sx={{
+                                            bgcolor: '#f9f9f9',
+                                            maxWidth: 300,
+                                            boxShadow: selectedProducts.includes(producto) ? '0 0 0 3px #1976d2' : 3,
+                                            position: 'relative',
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'space-between',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                            '&:hover': { transform: 'scale(1.05)' }
+                                        }}
+                                        onClick={() => !compareMode && navigate(`/product/${producto._id}`)}
+                                    >
+                                        <CardMedia
+                                            component="img"
+                                            height="200"
+                                            width="200"
+                                            image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                            alt={producto.nombre}
+                                            sx={{ objectFit: 'cover' }}
+                                        />
+                                        <CardContent>
+                                            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                {producto.nombre}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {producto.descripcion}
+                                            </Typography>
+                                            <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
+                                                ${producto.precio_actual}
+                                            </Typography>
+                                            <Typography variant="body2">{producto.marca}</Typography>
+                                            <Typography variant="body2">Categoria: {producto.categoria}</Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            ))
+                        ) : (
+                            <Typography variant="h6" sx={{ mt: 2 }}>No se encontraron productos</Typography>
+                        )}
+                    </Grid>
+
+    
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        <Pagination
+                            count={Math.ceil(productos.length / productsPerPage)}
+                            page={page}
+                            onChange={handlePageChange}
+                            color="primary"
+                        />
+                    </Box>
+                    </>
+                     )}
+                </Grid>
             </Grid>
-        </Grid>
-    </Container>
+        </Container>
     );
 }
 
