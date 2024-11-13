@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
-import { Container, Card, CardMedia, CardContent, Typography, Grid, Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { useParams, Link,useNavigate  } from 'react-router-dom';
+import { Container, Card, CardMedia, CardContent, Typography, Grid, Box, Button,IconButton , Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import Slider from 'react-slick';
@@ -37,6 +37,9 @@ function ProductDetails() {
     const [similarProducts, setSimilarProducts] = useState([]);
     const [errorMessage, setErrorMessage] = useState(null);
     const placeholderImage = 'https://via.placeholder.com/150';
+    const navigate = useNavigate();
+    const [product, setProduct] = useState(null);
+    const [productos, setProductos] = useState([]);
 
     useEffect(() => {
         // Obtener detalles del producto actual
@@ -61,21 +64,61 @@ function ProductDetails() {
                 console.error("Error al obtener productos similares:", error);
                 setErrorMessage("Error al obtener productos similares.");
             });
-    
+
     // Obtener productos relacionados
-    axios.get(`http://localhost:3000/api/productos/relacionados/${id}`)
+        axios.get(`http://localhost:3000/api/productos/relacionados/${id}`)
         .then(response => {
             console.log("Productos relacionados:", response.data);
             setRelatedProducts(response.data);
         })
-        .catch(error => console.error("Error al obtener productos relacionados:", error));
+            .catch(error => console.error("Error al obtener productos relacionados:", error));
     }, [id]);
+    
+    {/* Productos Relacionados */}
+    // Llamada para obtener los detalles del producto basado en el ID
+    useEffect(() => {
+        fetchProductDetails(id);
+
+        // Al cambiar el producto, desplazarse al inicio de la página
+        window.scrollTo(0, 0);
+    }, [id]);
+
+    {/* Descuento de productos */}
+    useEffect(() => {
+        axios.get('http://localhost:3000/api/productos-con-descuento')
+            .then(response => {
+                setProductos(response.data); // `descuento` y `aumento` ahora están disponibles en cada producto
+            })
+            .catch(error => console.error("Error al obtener productos:", error));
+    }, []);
+    const productosConDescuento = productos.filter(producto => producto.descuento > 0);
+
+
+
+    // Función para manejar la selección de un producto relacionado
+    const handleRelatedProductClick = (relatedProductId) => {
+        navigate(`/product/${relatedProductId}`);
+    };
 
     const handlePurchase = (link) => {
         if (link) {
             window.open(link, "_blank");
         } else {
             alert("El enlace de compra no está disponible.");
+        }
+    };
+
+    const fetchProductDetails = async (id) => {
+        // Aquí deberías agregar la lógica para obtener los detalles del producto basado en el ID
+        // Ejemplo:
+        try {
+            const response = await fetch(`http://localhost:3000/api/product/${id}`);
+            const data = await response.json();
+            setProduct(data);
+            // Suponiendo que el producto tiene un campo 'relatedProducts'
+            setRelatedProducts(data.relatedProducts || []);
+        } catch (error) {
+            console.error("Error fetching product details:", error);
         }
     };
 
@@ -101,61 +144,68 @@ function ProductDetails() {
             },
         ],
     };
+    // Definir las variables para el cálculo de descuento o aumento
+    // Calcular el último precio en el historial de precios y el cambio porcentual
+    const lastPrice = producto.historial_precios && producto.historial_precios.length > 0
+        ? producto.historial_precios.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[producto.historial_precios.length - 1].precio
+        : null;
+
+    const priceDifference = lastPrice !== null ? producto.precio_actual - lastPrice : 0;
+    const percentageChange = lastPrice !== null ? ((Math.abs(priceDifference) / lastPrice) * 100).toFixed(2) : 0;
+
+        // Mostrar por consola los valores
+    console.log("Precio actual:", producto.precio_actual);
+    console.log("Último precio en historial:", lastPrice);
+    console.log("Diferencia de precio:", priceDifference);
+    console.log("Cambio porcentual:", percentageChange);
+    // Definir el estado del precio en base a la comparación
+    const estado = priceDifference > 0
+        ? `Aumentó: ${percentageChange}%`
+        : priceDifference < 0
+        ? `Bajó: ${percentageChange}%`
+        : "Sin cambios";
+
+
+
     const settings = {
         dots: false,
         infinite: true,
         speed: 500,
         slidesToShow: 5,
         slidesToScroll: 3,
-        nextArrow: <Arrow icon={"›"} />,
-        prevArrow: <Arrow icon={"‹"} />,
-        responsive: [
-            {
-                breakpoint: 1024,
-                settings: {
-                    slidesToShow: 3,
-                    slidesToScroll: 2,
-                }
-            },
-            {
-                breakpoint: 600,
-                settings: {
-                    slidesToShow: 2,
-                    slidesToScroll: 1,
-                }
-            }
-        ]
-    };
-    
+        prevArrow: <IconButton sx={{ fontSize: 30, position: 'absolute', left: 10, top: '40%', zIndex: 10 }}>{"<"}</IconButton>,
+        nextArrow: <IconButton sx={{ fontSize: 30, position: 'absolute', right: 10, top: '40%', zIndex: 10 }}>{">"}</IconButton>
 
+    };
+
+    // Definición de las opciones del gráfico `priceHistoryOptions`
     const priceHistoryOptions = {
         responsive: true,
         plugins: {
             legend: {
-                display: true,
-                position: 'top',
+                display: false
             },
             tooltip: {
                 callbacks: {
-                    label: (context) => `Precio: $${context.raw}`,
-                },
-            },
+                    label: (context) => `Precio: $${context.raw.toLocaleString('es-CL')}`
+                }
+            }
         },
         scales: {
             x: {
                 title: {
                     display: true,
-                    text: 'Fecha',
-                },
+                    text: 'Fecha'
+                }
             },
             y: {
                 title: {
                     display: true,
-                    text: 'Precio ($)',
+                    text: 'Precio (CLP)'
                 },
-                beginAtZero: false,
-            },
-        },
+                beginAtZero: false
+            }
+        }
     };
 
     return (
@@ -173,6 +223,18 @@ function ProductDetails() {
                     <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {producto.nombre}
                     </Typography>
+                    
+                    <Typography 
+                        variant="body1" 
+                        sx={{ 
+                            fontWeight: 'bold', 
+                            color: estado.includes('Bajó') ? 'green' : estado.includes('Aumentó') ? 'red' : 'gray' 
+                        }}
+                    >
+                        {estado || 'Estado no disponible'}
+                    </Typography>
+
+
                     <Typography variant="h5" color="primary" sx={{ mt: 2 }}>
                         Precio: {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : "-"}
                     </Typography>
@@ -189,6 +251,9 @@ function ProductDetails() {
                     </Button>
                 </Box>
             </Paper>
+
+
+
 
              {/* Caracteristicas del producto */}
              <Accordion sx={{ mt: 4 }}>
@@ -223,7 +288,7 @@ function ProductDetails() {
             </Paper>
 
             {/* Comparación con productos similares */}
-            <Paper elevation={4} sx={{ p: 4, mb: 4, borderRadius: 2, mt: 4 }}>
+            <Paper elevation={4} sx={{ p: 4, mb: 4, borderRadius: 6, mt: 12 }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
                     Compara con otros productos similares
                 </Typography>
@@ -302,37 +367,90 @@ function ProductDetails() {
                 </TableContainer>
             </Paper>
 
-            {/* Productos Relacionados */}
-            <Box sx={{ mt: 4, justifyContent: 'flex-end', gap: 6, mb: 2  }}>
+             {/* Productos Relacionados */}
+            <Box
+                sx={{
+                    mt: 4,
+                    mb: 2,
+                    p: 2,
+                    border: '1px solid #ddd', // Borde para distinguir la sección
+                    borderRadius: 2,
+                    position: 'relative',
+                    backgroundColor: '#f9f9f9',
+                }}
+            >
                 <Typography variant="h6" gutterBottom>Productos Relacionados</Typography>
-                <Slider {...settings}>
+                <Slider
+                    {...settings}
+                    arrows
+                    prevArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', left: 10, top: '40%', zIndex: 10 }}>{"<"}</IconButton>}
+                    nextArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', right: 10, top: '40%', zIndex: 10 }}>{">"}</IconButton>}
+                >
                     {relatedProducts.map((related, index) => (
-                        <Card key={index} sx={{ width: 200, boxShadow: 3,gap: 6, textAlign: 'center' }}>
-
-                            
-                            <CardMedia
-                                component="img"
-                                image={related.imagenUrl || placeholderImage}
-                                alt={related.nombre}
+                        <Box key={index} sx={{ px: 1, mb: 2 }}> {/* Añadir padding horizontal entre las tarjetas */}
+                            <Link to={`/product/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}> {/* Enlace al ProductDetails.js con el ID */}
+                            <Card
                                 sx={{
-                                    width: '100%',
-                                    height: 150,  // Ajusta la altura para que todas las imágenes sean del mismo tamaño
-                                    objectFit: 'cover',  // Hace que la imagen cubra el espacio sin distorsionarse
-                                    borderRadius: 4,
-
+                                        width: 200,
+                                    boxShadow: 3,
+                                    textAlign: 'left',
+                                    borderRadius: 2,
+                                    padding: '10px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                        cursor: 'pointer', // Cambia el cursor a pointer para indicar que es clickeable
                                 }}
-                            />
-                            <CardContent>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{related.nombre}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Precio: ${related.precio_actual?.toLocaleString('es-CL')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
+                            >
+                                <CardMedia
+                                    component="img"
+                                    image={related.imagenUrl || placeholderImage}
+                                    alt={related.nombre}
+                                    sx={{
+                                        width: '100%',
+                                        height: 160,
+                                        objectFit: 'contain',
+                                        borderRadius: 1,
+                                        mb: 1,
+                                    }}
+                                />
+                                <CardContent sx={{ padding: '10px' }}>
+                                        {/* Precio y Descuento */}
+                                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: '1.1rem' }}>
+                                        ${related.precio_actual?.toLocaleString('es-CL')}
+                                    </Typography>
+                                        {related.descuento && (
+                                            <Typography variant="body2" sx={{ color: '#ff0000', textDecoration: 'line-through' }}>
+                                                ${related.precio_original?.toLocaleString('es-CL')}
+                                            </Typography>
+                                        )}
+                                        {related.descuento && (
+                                            <Typography variant="body2" sx={{ color: '#00a650', fontWeight: 'bold' }}>
+                                                {related.descuento}% OFF
+                                            </Typography>
+                                        )}
+                                        
+                                        {/* Detalle adicional como cuotas */}
+                                        <Typography variant="body2" sx={{ color: '#00a650' }}>
+                                            6 cuotas de ${(related.precio_actual / 6).toLocaleString('es-CL')} sin interés
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: '#007aff' }}>
+                                            Envío gratis por ser tu primera compra
+                                        </Typography>
+                                        
+                                        {/* Nombre del producto */}
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                        {related.nombre}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {related.descripcion}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                            </Link>
+                        </Box>
                     ))}
                 </Slider>
-
-
             </Box>
         </Container>
     );

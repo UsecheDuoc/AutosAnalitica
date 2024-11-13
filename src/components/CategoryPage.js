@@ -252,6 +252,7 @@ function CategoryPage() {
             setErrorMessage("Hubo un error al obtener los productos por marca. Por favor, intenta de nuevo.");
         }
     };
+    
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
             const response = await axios.get(`http://localhost:3000/api/productos/categoria`, {

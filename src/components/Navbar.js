@@ -36,6 +36,12 @@ function Navbar() {
         // Aquí puedes implementar la lógica para cambiar el idioma de la página
     };
 
+    // Nueva función para manejar el clic en el logo
+    const handleLogoClick = () => {
+        setSearchQuery('');  // Limpia la barra de búsqueda
+        navigate('/');       // Redirige al inicio
+    };
+
     return (
         <AppBar position="static" sx={{ bgcolor: '#000', padding: '10px 0' }}>
             <Toolbar sx={{ justifyContent: 'space-between', padding: '0 20px' }}>
@@ -43,11 +49,13 @@ function Navbar() {
 
                 {/* Logo y botón de añadir vehículo */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#FFD700' }}>
-                            AutosAnalítica
-                        </Typography>
-                    </Link>
+                    <Typography
+                        variant="h5"
+                        sx={{ fontWeight: 'bold', color: '#FFD700', cursor: 'pointer' }}
+                        onClick={handleLogoClick}  // Ejecuta handleLogoClick al hacer clic en el logo
+                    >
+                        AutosAnalítica
+                    </Typography>
                 </Box>
 
                 {/* Barra de búsqueda */}

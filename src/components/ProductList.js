@@ -1,7 +1,7 @@
 // src/components/ProductList.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button, Pagination } from '@mui/material';
+import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button,IconButton, Pagination } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -44,6 +44,7 @@ function ProductList() {
     const [page, setPage] = useState(1);
     const productsPerPage = 20;
     const navigate = useNavigate();
+    const [relatedProducts, setRelatedProducts] = useState([]);
 
     useEffect(() => {
         fetchProductos();
@@ -68,6 +69,31 @@ function ProductList() {
         arrows: true,
     };
 
+    const settings = {
+        dots: true,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 3, // Ajusta según el número de productos que deseas mostrar
+        slidesToScroll: 1,
+        responsive: [
+            {
+                breakpoint: 1024,
+                settings: {
+                    slidesToShow: 2,
+                    slidesToScroll: 1,
+                },
+            },
+            {
+                breakpoint: 600,
+                settings: {
+                    slidesToShow: 1,
+                    slidesToScroll: 1,
+                },
+            },
+        ],
+    };
+    
+
     // Función para redirigir a CategoryPage con el nombre de la categoría
     const handleCategoriaClick = (nombreCategoria) => {
         navigate(`/categoria/${nombreCategoria}`);
@@ -89,7 +115,7 @@ function ProductList() {
             {/* Sección de Categorías */}
             <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 3, mb: 4 }}>
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#333' }}>
-                    Top Categories
+                    Productos por categorias
                 </Typography>
                 <Slider {...carouselSettings}>
                     {categorias.map((categoria, index) => (
@@ -123,7 +149,7 @@ function ProductList() {
             {/* Sección de Marcas */}
             <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 3, mb: 4 }}>
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#333' }}>
-                    Marcas
+                    Productos por Marcas
                 </Typography>
                 <Slider {...carouselSettings}>
                     {marcas.map((marca, index) => (
@@ -153,25 +179,77 @@ function ProductList() {
                 </Slider>
             </Box>
 
-            {/* Lista de Productos */}
-            <Typography variant="h4" gutterBottom>Productos</Typography>
-            <Grid container spacing={2}>
-                {productos.slice((page - 1) * productsPerPage, page * productsPerPage).map((producto, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                        <Card>
-                            <CardMedia component="img" height="150" image={producto.imagenUrl || 'https://via.placeholder.com/200'} alt={producto.nombre} />
-                            <CardContent>
-                                <Typography variant="h6">{producto.nombre}</Typography>
-                                <Typography variant="body2">Marca: {producto.marca}</Typography>
-                                <Typography variant="body2">Precio: ${producto.precio_actual}</Typography>
-                                <Button variant="contained" href={`/detalle/${producto._id}`}>
-                                    Ver detalles
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
+            {/* Productos Relacionados */}
+            <Box
+                sx={{
+                    mt: 4,
+                    mb: 2,
+                    p: 2,
+                    border: '1px solid #ddd', // Borde para distinguir la sección
+                    borderRadius: 2,
+                    position: 'relative',
+                    backgroundColor: '#f9f9f9',
+                }}
+                >
+                <Typography variant="h6" gutterBottom>Lista de Productos </Typography>
+                <Slider
+                    {...settings}
+                    arrows
+                    prevArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', left: -5, top: '40%', zIndex: 10 }}>{"<"}</IconButton>}
+                    nextArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', right: -5, top: '40%', zIndex: 10 }}>{">"}</IconButton>}
+                >
+                    {productos.slice((page - 1) * productsPerPage, page * productsPerPage).map((producto, index) => (
+                        <Box key={index} sx={{ px: 1, mb: 2 }}>
+                            <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none', color: 'inherit' }}> {/* Enlace al ProductDetails.js con el ID */}
+                                <Card 
+                                    sx={{
+                                        width: 300,
+                                        boxShadow: 3,
+                                        textAlign: 'left',
+                                        borderRadius: 2,
+                                        padding: '10px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        cursor: 'pointer', // Cambia el cursor a pointer para indicar que es clickeable
+                                    }}
+                                >
+                                    <CardMedia
+                                        component="img"
+                                        image={producto.imagenUrl || 'https://via.placeholder.com/200'}  // Uso de URL de marcador de posición
+                                        alt={producto.nombre}
+                                        sx={{
+                                            width: '100%',
+                                            height: 160,
+                                            objectFit: 'contain',
+                                            borderRadius: 1,
+                                            mb: 1,
+                                        }}
+                                    />
+                                    <CardContent>
+                                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                            ${producto.precio_actual.toLocaleString('es-CL')}
+                                        </Typography>
+                                        <Typography variant="body2" color="green" sx={{ mb: 1 }}>
+                                            6 cuotas de ${(producto.precio_actual / 6).toLocaleString('es-CL')} sin interés
+                                        </Typography>
+                                        <Typography variant="body2" color="blue" sx={{ mb: 1 }}>
+                                            Envío gratis por ser tu primera compra
+                                        </Typography>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{producto.nombre}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                            {producto.descripcion}
+                                        </Typography>
+
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        </Box>
+                    ))}
+                </Slider>
+            </Box>
+
+
 
             {/* Paginación */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
