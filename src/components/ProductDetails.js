@@ -7,6 +7,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import Slider from 'react-slick';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import config from '../config';
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 
@@ -43,7 +45,7 @@ function ProductDetails() {
 
     useEffect(() => {
         // Obtener detalles del producto actual
-        axios.get(`http://localhost:3000/api/productos/${id}`)
+        axios.get(`${config.apiBaseUrl}/${id}`)
             .then(response => {
                 console.log("Producto obtenido:", response.data);
                 setProducto(response.data);
@@ -55,7 +57,7 @@ function ProductDetails() {
             });
     
         // Obtener productos similares
-        axios.get(`http://localhost:3000/api/productos/buscar-similares?id=${id}`)
+        axios.get(`${config.apiBaseUrl}/buscar-similares?id=${id}`)
             .then(response => {
                 console.log("Productos similares:", response.data);
                 setSimilarProducts(response.data.slice(0, 3)); // Limita a 3 productos similares
@@ -66,7 +68,7 @@ function ProductDetails() {
             });
 
     // Obtener productos relacionados
-        axios.get(`http://localhost:3000/api/productos/relacionados/${id}`)
+        axios.get(`${config.apiBaseUrl}/relacionados/${id}`)
         .then(response => {
             console.log("Productos relacionados:", response.data);
             setRelatedProducts(response.data);
@@ -85,7 +87,7 @@ function ProductDetails() {
 
     {/* Descuento de productos */}
     useEffect(() => {
-        axios.get('http://localhost:3000/api/productos-con-descuento')
+        axios.get('${config.apiBaseUrl}/productos-con-descuento')
             .then(response => {
                 setProductos(response.data); // `descuento` y `aumento` ahora están disponibles en cada producto
             })
@@ -112,7 +114,7 @@ function ProductDetails() {
         // Aquí deberías agregar la lógica para obtener los detalles del producto basado en el ID
         // Ejemplo:
         try {
-            const response = await fetch(`http://localhost:3000/api/product/${id}`);
+            const response = await fetch(`${config.apiBaseUrl}/${id}`);
             const data = await response.json();
             setProduct(data);
             // Suponiendo que el producto tiene un campo 'relatedProducts'

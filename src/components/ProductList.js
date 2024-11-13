@@ -52,7 +52,7 @@ function ProductList() {
 
     const fetchProductos = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/productos');
+            const response = await axios.get('https://api-autoanalitica.onrender.com/api/productos');
             setProductos(response.data);
         } catch (error) {
             console.error("Error al obtener productos:", error);

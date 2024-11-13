@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';  // Asegúrate de importar Link
 import { Breadcrumbs } from '@mui/material';
+import config from '../config';
 
 // Función para capitalizar las rutas (opcional)
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -58,7 +59,7 @@ function CategoryPage() {
     // Nueva función para manejar la carga de modelos basados en la marca seleccionada
     const fetchModelosPorMarca = async (marca) => {
         try {
-            const response = await axios.get(`http://localhost:3000/api/productos/modelos`, { params: { marca } });
+            const response = await axios.get(`${config.apiBaseUrl}/modelos`, { params: { marca } });
             setModelosDisponibles(response.data); // Cargar los modelos disponibles para la marca seleccionada
         } catch (error) {
             console.error("Error al obtener modelos:", error);
@@ -134,7 +135,7 @@ function CategoryPage() {
         // Determinar si se está haciendo una búsqueda por marca o por categoría
         const searchType = location.pathname.includes('/marca/') ? 'marca' : 'categoria';
     
-        axios.get(`http://localhost:3000/api/productos`, {
+        axios.get(`${config.apiBaseUrl}`, {
             params: {
                 [searchType]: categoryName, // Buscar por categoría o marca, según corresponda
                 marca: brandFilter || undefined,
@@ -169,7 +170,7 @@ function CategoryPage() {
     };
     
     const applyFilters = () => {
-        axios.get(`http://localhost:3000/api/productos`, {
+        axios.get(`${config.apiBaseUrl}`, {
             params: {
                 categoria: categoryFilter || undefined,
                 marca: brandFilter || undefined,
@@ -224,7 +225,7 @@ function CategoryPage() {
     
     //CODIGO ANTIGUO
      {/*const fetchProducts = () => {
-        axios.get(`http://localhost:3000/api/productos`, {
+        axios.get(`${config.apiBaseUrl}/productos/api/productos`, {
             params: {
                 [filterType]: categoryName, // Parámetro dinámico para buscar por categoría o marca
                 filter: filter,
@@ -238,7 +239,7 @@ function CategoryPage() {
 
     const fetchProductosPorMarca = async (nombreMarca) => {
         try {
-            const response = await axios.get(`http://localhost:3000/api/productos/marca`, { params: { nombre: nombreMarca } });
+            const response = await axios.get(`${config.apiBaseUrl}/marca`, { params: { nombre: nombreMarca } });
             setProductos(response.data);
             if (response.data.length === 0) {
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
@@ -255,7 +256,7 @@ function CategoryPage() {
     
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
-            const response = await axios.get(`http://localhost:3000/api/productos/categoria`, {
+            const response = await axios.get(`${config.apiBaseUrl}/categoria`, {
                 params: {
                     categoria: nombreCategoria,
                     marca: brandFilter || undefined,
