@@ -8,6 +8,7 @@ import "slick-carousel/slick/slick-theme.css";
 import { Link } from 'react-router-dom';
 import Slider from "react-slick"; // Importa react-slick
 import CloseIcon from '@mui/icons-material/Close';
+import config from '../config';
 
 
 // Datos de categorías y marcas
@@ -52,7 +53,7 @@ function ProductList() {
 
     const fetchProductos = async () => {
         try {
-            const response = await axios.get('https://api-autoanalitica.onrender.com/api/productos');
+            const response = await axios.get('${config.apiBaseUrl}');
             setProductos(response.data);
         } catch (error) {
             console.error("Error al obtener productos:", error);

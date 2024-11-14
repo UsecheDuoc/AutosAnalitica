@@ -92,7 +92,7 @@ function SearchResults() {
     
     const fetchProductosPorMarca = async (nombreMarca) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/productos/marca`, { params: { nombre: nombreMarca } });
+            const response = await axios.get(`${config.apiBaseUrl}/marca`, { params: { nombre: nombreMarca } });
             setProductos(response.data);
             if (response.data.length === 0) {
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
@@ -109,7 +109,7 @@ function SearchResults() {
 
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/productos/categoria`, {
+            const response = await axios.get(`${config.apiBaseUrl}/categoria`, {
                 params: {
                     categoria: nombreCategoria,
                     marca: brandFilter || undefined,
@@ -142,7 +142,7 @@ function SearchResults() {
         // Llama a la API para obtener los modelos de la marca seleccionada
         if (selectedBrand) {
             try {
-                const response = await axios.get(`${config.apiBaseUrl}/productos/modelos`, {
+                const response = await axios.get(`${config.apiBaseUrl}/modelos`, {
                     params: { marca: selectedBrand }
                 });
                 setModelosDisponibles(response.data); // Actualizar la lista de modelos disponibles
@@ -185,7 +185,7 @@ function SearchResults() {
     
     const fetchModelosPorMarca = async (marca) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/productos/modelos`, { params: { marca } });
+            const response = await axios.get(`${config.apiBaseUrl}/modelos`, { params: { marca } });
             
             // Filtra los modelos únicos
             const modelosUnicos = [...new Set(response.data.map((producto) => producto.modelo))];
