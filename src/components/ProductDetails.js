@@ -87,7 +87,7 @@ function ProductDetails() {
 
     {/* Descuento de productos */}
     useEffect(() => {
-        axios.get('${config.apiBaseUrl}/productos-con-descuento')
+        axios.get(`${config.apiBaseUrl}/productos-con-descuento`)
             .then(response => {
                 setProductos(response.data); // `descuento` y `aumento` ahora están disponibles en cada producto
             })
@@ -95,7 +95,20 @@ function ProductDetails() {
     }, []);
     const productosConDescuento = productos.filter(producto => producto.descuento > 0);
 
+  
+    useEffect(() => {
+        // Llama a la API para obtener productos relacionados
+        const fetchRelatedProducts = async () => {
+            try {
+                const response = await axios.get(`${config.apiBaseUrl}/relacionados/${id}`);
+                setRelatedProducts(response.data);
+            } catch (error) {
+                console.error("Error al obtener productos relacionados:", error);
+            }
+        };
 
+        fetchRelatedProducts();
+    }, [id]);
 
     // Función para manejar la selección de un producto relacionado
     const handleRelatedProductClick = (relatedProductId) => {
@@ -210,10 +223,78 @@ function ProductDetails() {
         }
     };
 
+    // Configuración del carrusel para categorías y marcas
+    const carouselSettings = {
+        dots: false,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 4, // Por defecto muestra 4 elementos
+        slidesToScroll: 1,
+        arrows: true,
+        responsive: [
+            {
+                breakpoint: 1280, // Pantallas grandes
+                settings: {
+                    slidesToShow: 4,
+                },
+            },
+            {
+                breakpoint: 1024, // Pantallas medianas
+                settings: {
+                    slidesToShow: 3,
+                },
+            },
+            {
+                breakpoint: 768, // Tablets y pantallas pequeñas
+                settings: {
+                    slidesToShow: 2,
+                },
+            },
+            {
+                breakpoint: 480, // Dispositivos móviles
+                settings: {
+                    slidesToShow: 1,
+                },
+            },
+        ],
+    };
+
+    // Configuración del carrusel para productos relacionados
+    const productCarouselSettings = {
+        dots: true,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 3, // Por defecto muestra 3 elementos
+        slidesToScroll: 1,
+        responsive: [
+            {
+                breakpoint: 1280, // Pantallas grandes
+                settings: {
+                    slidesToShow: 3,
+                },
+            },
+            {
+                breakpoint: 1024, // Pantallas medianas
+                settings: {
+                    slidesToShow: 2,
+                },
+            },
+            {
+                breakpoint: 768, // Tablets y pantallas pequeñas
+                settings: {
+                    slidesToShow: 1,
+                },
+            },
+        ],
+    };
+
+
     return (
-        <Container sx={{ mt: 4 }}>
+        <Container maxWidth="md" sx={{ width: '100%', p: { xs: 1, sm: 2 } }}    >
+
+            
             {/* Detalles del producto */}
-            <Paper elevation={4} sx={{ p: 3, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center' }}>
+            <Paper elevation={4} sx={{ p: 2, width: '100%', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center' }}>
                 <CardMedia
                     component="img"
                     height="300"
@@ -221,7 +302,7 @@ function ProductDetails() {
                     alt={producto.nombre}
                     sx={{ width: { xs: '100%', md: '40%' }, mr: { md: 3 }, borderRadius: 2 }}
                 />
-                <Box sx={{ flex: 1, mt: { xs: 3, md: 0 } }}>
+                <Box sx={{ flex: 1, mt: { xs: 3, md: 0 },width: '100%'  }}>
                     <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {producto.nombre}
                     </Typography>
@@ -284,27 +365,39 @@ function ProductDetails() {
             </Accordion>
 
             {/* Historial de precios */}
-            <Paper elevation={4}  sx={{ mt: 4, p: 2 }}>
+            <Paper elevation={4} sx={{ mt: 4, p: 2, width: '100%' }}>
                 <Typography variant="h6" gutterBottom>Historial de Precios</Typography>
                 <Line data={priceHistoryData} options={priceHistoryOptions} height={100} width={400} />
             </Paper>
 
             {/* Comparación con productos similares */}
-            <Paper elevation={4} sx={{ p: 4, mb: 4, borderRadius: 6, mt: 12 }}>
+            <Paper elevation={4} sx={{ p: 2, mt: 4,mb: 5, borderRadius: 6, width: '100%' }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
                     Compara con otros productos similares
                 </Typography>
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 4, mb: 4 }}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2,
+                    width: '100%',
+                    overflowX: { xs: 'auto', sm: 'unset' }, // Scroll en pantallas pequeñas
+                    justifyContent: { sm: 'center' }
+                }}>                    
                     {[producto, ...similarProducts].map((prod, index) => (
-                        <Card key={index} sx={{ width: 200, boxShadow: 3, textAlign: 'center' }}>
+                        <Card key={index} sx={{ width: { xs: '100%', sm: '200px' }, boxShadow: 3, textAlign: 'center' , flexShrink: 0 }}>
                             <CardMedia
                                 component="img"
-                                height="150"
-                                image={prod.imagenUrl || placeholderImage}
-                                alt={prod.nombre}
-                                sx={{ objectFit: 'contain', margin: 'auto' }}
-                            />
+                                image={prod.imagenUrl || placeholderImage} // Cambia 'related' a 'prod'
+                                alt={prod.nombre} // Cambia 'related' a 'prod'
+                                sx={{
+                                    width: '100%',
+                                    height: { xs: 120, sm: 160 },
+                                    objectFit: 'contain',
+                                    borderRadius: 1,
+                                    mb: 1,
+                                }}
+                            />  
                             <CardContent>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{prod.nombre}</Typography>
                                 {index === 0 ? (
@@ -368,92 +461,42 @@ function ProductDetails() {
                     </Table>
                 </TableContainer>
             </Paper>
+            
 
-             {/* Productos Relacionados */}
-            <Box
-                sx={{
-                    mt: 4,
-                    mb: 2,
-                    p: 2,
-                    border: '1px solid #ddd', // Borde para distinguir la sección
-                    borderRadius: 2,
-                    position: 'relative',
-                    backgroundColor: '#f9f9f9',
-                }}
-            >
-                <Typography variant="h6" gutterBottom>Productos Relacionados</Typography>
-                <Slider
-                    {...settings}
-                    arrows
-                    prevArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', left: 10, top: '40%', zIndex: 10 }}>{"<"}</IconButton>}
-                    nextArrow={<IconButton sx={{ fontSize: 30, position: 'absolute', right: 10, top: '40%', zIndex: 10 }}>{">"}</IconButton>}
-                >
-                    {relatedProducts.map((related, index) => (
-                        <Box key={index} sx={{ px: 1, mb: 2 }}> {/* Añadir padding horizontal entre las tarjetas */}
-                            <Link to={`/product/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}> {/* Enlace al ProductDetails.js con el ID */}
-                            <Card
-                                sx={{
-                                        width: 200,
-                                    boxShadow: 3,
-                                    textAlign: 'left',
-                                    borderRadius: 2,
-                                    padding: '10px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    justifyContent: 'space-between',
-                                        cursor: 'pointer', // Cambia el cursor a pointer para indicar que es clickeable
-                                }}
-                            >
-                                <CardMedia
-                                    component="img"
-                                    image={related.imagenUrl || placeholderImage}
-                                    alt={related.nombre}
-                                    sx={{
-                                        width: '100%',
-                                        height: 160,
-                                        objectFit: 'contain',
-                                        borderRadius: 1,
-                                        mb: 1,
-                                    }}
-                                />
-                                <CardContent sx={{ padding: '10px' }}>
-                                        {/* Precio y Descuento */}
-                                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333', fontSize: '1.1rem' }}>
-                                        ${related.precio_actual?.toLocaleString('es-CL')}
-                                    </Typography>
-                                        {related.descuento && (
-                                            <Typography variant="body2" sx={{ color: '#ff0000', textDecoration: 'line-through' }}>
-                                                ${related.precio_original?.toLocaleString('es-CL')}
-                                            </Typography>
-                                        )}
-                                        {related.descuento && (
-                                            <Typography variant="body2" sx={{ color: '#00a650', fontWeight: 'bold' }}>
-                                                {related.descuento}% OFF
-                                            </Typography>
-                                        )}
-                                        
-                                        {/* Detalle adicional como cuotas */}
-                                        <Typography variant="body2" sx={{ color: '#00a650' }}>
-                                            6 cuotas de ${(related.precio_actual / 6).toLocaleString('es-CL')} sin interés
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ color: '#007aff' }}>
-                                            Envío gratis por ser tu primera compra
-                                        </Typography>
-                                        
-                                        {/* Nombre del producto */}
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                        {related.nombre}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {related.descripcion}
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                            </Link>
-                        </Box>
-                    ))}
-                </Slider>
-            </Box>
+             {/* Productos Destacados */}
+             <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p:1 , mb: 5 }}>
+             <div className="mt-8 px-4 relative">
+             <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
+             <Slider
+                 {...settings}
+                 arrows={false} // Eliminamos las flechas
+                 autoplay={true} // Activamos el desplazamiento automático
+                 autoplaySpeed={2000} // Intervalo de 2 segundos
+             >
+                 {relatedProducts.map((related, index) => (
+                 <div key={index} className="px-2">
+                    <Link to={`/product/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}> {/* Enlace al ProductDetails.js con el ID */}
+
+                     <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
+                     <img
+                         src={producto.imagenUrl || "https://via.placeholder.com/300"}
+                         alt={producto.nombre}
+                         className="h-44 w-full object-cover"
+                     />
+                     <div className="p-4">
+                         <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                         <p className="text-green-500 font-bold mt-2">
+                         ${producto.precio_actual.toLocaleString("es-CL")}
+                         </p>
+                         <p className="text-gray-500 text-sm mt-1">{producto.descripcion}</p>
+                     </div>
+                     </div>
+                     </Link>
+                 </div>
+                 ))}
+             </Slider>
+             </div>
+         </Box>
         </Container>
     );
 }

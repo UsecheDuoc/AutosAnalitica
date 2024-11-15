@@ -314,6 +314,7 @@ function CategoryPage() {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
+            
             <Typography variant="h4" sx={{ mb: 4, color: '#003366', fontWeight: 'bold' }}>
                 {categoryName} Products
             </Typography>

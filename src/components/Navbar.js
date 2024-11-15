@@ -43,12 +43,24 @@ function Navbar() {
     };
 
     return (
-        <AppBar position="static" sx={{ bgcolor: '#000', padding: '10px 0' }}>
-            <Toolbar sx={{ justifyContent: 'space-between', padding: '0 20px' }}>
+        <AppBar position="static" sx={{ bgcolor: '#000', padding: '15px 50px' }}>
+            <Toolbar     
+            sx={{
+                display: 'flex',
+                justifyContent: 'space-between', // Distribuye los elementos a los lados y centro
+                alignItems: 'center',
+                maxWidth: '1400px', // Ancho máximo del navbar
+                width: '100%',
+                mx: 'auto', // Centra el Navbar horizontalmente con margen automático
+
+                gap: 4, // Espacio entre los elementos
+                padding: '0 20px'
+                }}
+                >
                 <Sidebar categories={categories} onCategorySelect={handleCategorySelect} />
 
                 {/* Logo y botón de añadir vehículo */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mr: 'auto' }}>
                     <Typography
                         variant="h5"
                         sx={{ fontWeight: 'bold', color: '#FFD700', cursor: 'pointer' }}
@@ -62,8 +74,20 @@ function Navbar() {
                 <Box
                     component="form"
                     onSubmit={handleSearch}
-                    sx={{ display: 'flex', alignItems: 'center', bgcolor: 'white', borderRadius: 1, px: 2, width: '50%' }}
-                >
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: 'white',
+                        borderRadius: 1,
+                        px: 2,
+                        width: { xs: '100%', sm: '60%', md: '60%' },
+                        maxWidth: '600px',
+                        mx: 'auto', // Centra la barra de búsqueda en el navbar
+                        boxShadow: 1,
+                        mr: 30, // Ajusta este valor según cuánto quieras moverla hacia la izquierda
+
+                    }}
+                    >
                     <InputBase
                         placeholder="Buscar productos…"
                         inputProps={{ 'aria-label': 'search' }}
@@ -71,27 +95,26 @@ function Navbar() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         sx={{ flex: 1 }}
                     />
-                    <IconButton type="submit" sx={{ p: '10px', color: '#FFD700' }} aria-label="search">
-                        <SearchIcon />
-                    </IconButton>
+
+
+                    {/* Botones de sesión alineados a la derecha */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto', gap: 2 }}>
+                        <IconButton sx={{ color: 'white' }}>
+                            <PersonIcon />
+                        </IconButton>
+                        <Button color="inherit" component={Link} to="/login">Login</Button>
+                        <Button color="inherit" component={Link} to="/register">Register</Button>
+                    </Box>
+
+
                 </Box>
 
                 {/* Iconos y botones de sesión */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Select
-                        value={language}
-                        onChange={handleLanguageChange}
-                        sx={{ color: 'white', borderColor: 'white', minWidth: '50px', mr: 1 }}
-                        variant="outlined"
-                    >
-                        <MenuItem value="en">EN</MenuItem>
-                        <MenuItem value="es">ES</MenuItem>
-                    </Select>
+
                     <IconButton sx={{ color: 'white' }}>
                         <PersonIcon />
                     </IconButton>
-                    <Button color="inherit" component={Link} to="/login">Login</Button>
-                    <Button color="inherit" component={Link} to="/register">Register</Button>
                 </Box>
             </Toolbar>
         </AppBar>
