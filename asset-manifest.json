@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/AutosAnalitica/static/css/main.6d5716ae.css",
-    "main.js": "/AutosAnalitica/static/js/main.49a87783.js",
+    "main.css": "/AutosAnalitica/static/css/main.bab534c5.css",
+    "main.js": "/AutosAnalitica/static/js/main.7896af48.js",
     "static/media/slick.svg": "/AutosAnalitica/static/media/slick.2630a3e3eab21c607e21.svg",
     "static/media/slick.eot": "/AutosAnalitica/static/media/slick.a4e97f5a2a64f0ab1323.eot",
     "static/media/slick.ttf": "/AutosAnalitica/static/media/slick.c94f7671dcc99dce43e2.ttf",
     "static/media/slick.woff": "/AutosAnalitica/static/media/slick.295183786cd8a1389865.woff",
     "index.html": "/AutosAnalitica/index.html",
-    "main.6d5716ae.css.map": "/AutosAnalitica/static/css/main.6d5716ae.css.map",
-    "main.49a87783.js.map": "/AutosAnalitica/static/js/main.49a87783.js.map"
+    "main.bab534c5.css.map": "/AutosAnalitica/static/css/main.bab534c5.css.map",
+    "main.7896af48.js.map": "/AutosAnalitica/static/js/main.7896af48.js.map"
   },
   "entrypoints": [
-    "static/css/main.6d5716ae.css",
-    "static/js/main.49a87783.js"
+    "static/css/main.bab534c5.css",
+    "static/js/main.7896af48.js"
   ]
 }
