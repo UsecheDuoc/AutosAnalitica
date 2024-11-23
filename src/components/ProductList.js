@@ -16,7 +16,7 @@
     import { initialMarcas } from '../constants';
     import { CATEGORIES } from "../constants";
     import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
-
+    import { tienda } from "../constants";
 
 
     
@@ -50,26 +50,7 @@
         // Más marcas...
     ];
 
-    export const tienda = [
-        { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBd52oJwbk2yXum3Ons59Xs_nFeul7Z7kK7w&s', alt: 'Repuestos Coroca' },
-        { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBd52oJwbk2yXum3Ons59Xs_nFeul7Z7kK7w&s', alt: 'Repuestos MaraCars' },
-        { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBd52oJwbk2yXum3Ons59Xs_nFeul7Z7kK7w&s', alt: 'Repuestos CYR' },
-        
-    ];
 
-    export const tiendasAsociadas = [
-        { nombre: "Paris", logo: "https://via.placeholder.com/150x100?text=Paris" },
-        { nombre: "Falabella", logo: "https://via.placeholder.com/150x100?text=Falabella" },
-        { nombre: "Ripley", logo: "https://via.placeholder.com/150x100?text=Ripley" },
-        { nombre: "Mundo Repuestos", logo: "https://via.placeholder.com/150x100?text=Mundo+Repuestos" },
-        { nombre: "Maracars", logo: "https://via.placeholder.com/150x100?text=Maracars" },
-    ];
-    
-    export const brands = [
-        { src: 'https://via.placeholder.com/150', alt: 'Tienda 1' },
-        { src: 'https://via.placeholder.com/150', alt: 'Tienda 2' },
-        { src: 'https://via.placeholder.com/150', alt: 'Tienda 3' },
-    ];
     
     
     function ProductList() {
@@ -381,17 +362,29 @@
         const fetchProductosDestacados = async () => {
             try {
                 const response = await fetchWithFallback(`/productos/destacados-descuento`);
-                if (response.data && Array.isArray(response.data)) {
-                    setProductosDestacados(response.data);
-                } else {
-                    setErrorMessage("No se encontraron productos destacados.");
-                }
+                console.log('Productos destacados que trae la apo:',response)
+                setProductosDestacados(response);
+
             } catch (error) {
                 console.error("Error al obtener productos destacados:", error.message);
                 setErrorMessage("No se pudieron cargar los productos destacados.");
             }
         };
 
+        //FUNCION QUE TOMA LOS LOGOS DE LA LISTA DE TIENDAS
+        const getStoreLogo = (storeName) => {
+            // Normaliza los nombres para compararlos sin importar mayúsculas, minúsculas o espacios
+            const normalizeString = (str) => str?.toLowerCase().replace(/\s+/g, '') || '';
+        
+            // Normaliza el nombre de la tienda
+            const normalizedStoreName = normalizeString(storeName);
+        
+            // Busca el logo correspondiente
+            const logo = tienda.find((tienda) => normalizeString(tienda.alt) === normalizedStoreName);
+        
+            return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
+        };
+    
         
         return (
                 <Container 
@@ -1017,58 +1010,62 @@
                     </Box>
 
 
-                    {/* Logos de las marcas */}
-                    <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 1, mb: 6 }}>
-
-
-
-                    {/* Título de la sección */}
-                    <Box sx={{ textAlign: 'center', my: 5, pb: 2, borderBottom: '2px solid #ddd' }}>
-                        <Typography variant="h4" sx={{ fontWeight: 'bold', textTransform: 'uppercase', color: 'black' }}>
-                            Tiendas asociadas
-                        </Typography>
-                    </Box>
-                    <Grid container spacing={3} alignItems="center" justifyContent="center">
-                        {tiendasAsociadas.map((brand, index) => (
-                        <Card
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            boxShadow: 3,
-                            borderRadius: 2,
-                            p: 2,
-                            transition: 'transform 0.2s ease',
-                            '&:hover': { transform: 'scale(1.05)' },
-                        }}
-                        >
-                        <CardMedia
-                            component="img"
-                            image={tienda.logo}
-                            alt={tienda.nombre}
+                   
+                    {/* Sección para los logos de tiendas */}
+                    <Box sx={{ mt: 4 }}>
+                        {/* Título */}
+                        <Typography
+                            variant="h5"
                             sx={{
-                                height: 100,
-                                width: 'auto',
-                                objectFit: 'contain',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                mb: 2,
                             }}
-                        />
-                        <Typography variant="subtitle1" sx={{ mt: 1, fontWeight: 'bold', textAlign: 'center' }}>
-                            {tienda.nombre}
+                        >
+                            Tiendas disponibles
                         </Typography>
-                        </Card>
-                        ))}
-                    </Grid>
-                </Box>
 
-                {/* Paginación */}
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                    <Pagination
-                        count={Math.ceil(productos.length / productsPerPage)}
-                        page={page}
-                        onChange={handleChangePage}
-                        color="primary"
-                    />
-                </Box>
+                        {/* Logos de las tiendas */}
+                        <Grid container spacing={2} justifyContent="center">
+                            {tienda.map((store, index) => (
+                                <Grid
+                                    item
+                                    xs={6}
+                                    sm={4}
+                                    md={3}
+                                    lg={2}
+                                    key={index}
+                                    sx={{
+                                        textAlign: 'center',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    {/* Logo en blanco y negro */}
+                                    <img
+                                        src={store.src}
+                                        alt={store.alt}
+                                        style={{
+                                            width: '100%', // Ajusta el tamaño de las imágenes
+                                            height: '80px',
+                                            objectFit: 'contain',
+                                            marginBottom: '8px',
+                                            filter: 'grayscale(100%)', // Aplica el filtro en blanco y negro
+                                            transition: 'filter 0.3s ease', // Efecto suave al pasar el ratón
+                                        }}
+                                        onMouseOver={(e) => (e.target.style.filter = 'grayscale(0%)')} // Color al pasar el ratón
+                                        onMouseOut={(e) => (e.target.style.filter = 'grayscale(100%)')} // Blanco y negro al salir
+                                    />
+                                    {/* Nombre de la tienda */}
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                        {store.alt}
+                                    </Typography>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+
             </Container>
         );
     }

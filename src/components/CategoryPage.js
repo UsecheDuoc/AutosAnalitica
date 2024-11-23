@@ -14,6 +14,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Collapse from '@mui/material/Collapse';
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 import { CATEGORIES } from "../constants";
+import { tiendasAsociadas } from "../constants";
 
 
 // Función para capitalizar las rutas (opcional)
@@ -138,6 +139,7 @@ function CategoryPage() {
         }
     }, [brandFilter, modelFilter, discountFilter, storeFilter, filter, sortOrder]);
     
+    
     // useEffect para cargar los modelos basados en la marca seleccionada
     useEffect(() => {
         if (brandFilter) {
@@ -147,6 +149,7 @@ function CategoryPage() {
         }
     }, [brandFilter]);
     
+
     useEffect(() => {
         if (categoryFilter || brandFilter || modelFilter || discountFilter || storeFilter || sortOrder) {
             applyFilters();  // Aplica los filtros automáticamente cuando cambia `categoryFilter`
@@ -266,7 +269,8 @@ function CategoryPage() {
             fetchWithFallback(`/productos/buscar-similares`, {params})
             .then(response => {
                 const data = response.data || [];
-    
+                console.log('Datos extraidos de la api',{data})
+
                 if (!Array.isArray(data) || data.length === 0) {
                     setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
                     setProductos([]);
@@ -373,6 +377,7 @@ function CategoryPage() {
         });
     };*/}
     
+    //Efecto para inicializar los filtros en categoty cuando viene de home
     const fetchInitialProducts = () => {
         if (location.pathname.includes('/marca/')) {
             fetchProductosPorMarca(categoryName); // Si es búsqueda por marca
@@ -437,8 +442,9 @@ function CategoryPage() {
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
             //const productos = await fetchWithFallback(`/categoria?categoria=${encodeURIComponent(categoria)}`);
-
+            console.log("Categoria que trae: ",{nombreCategoria})
             const productos = await fetchWithFallback(`/productos/categoria?categoria=${encodeURIComponent(nombreCategoria)}`);
+            console.log('Productos recibidos por filtro categoria desde home',{productos})
             setProductos(productos);
 
             // Construye los parámetros
@@ -497,6 +503,21 @@ function CategoryPage() {
     };
 
 
+    
+    //FUNCION QUE TOMA LOS LOGOS DE LA LISTA DE TIENDAS
+    const getStoreLogo = (storeName) => {
+        const tiendaLogos = [
+            { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBd52oJwbk2yXum3Ons59Xs_nFeul7Z7kK7w&s', alt: 'RepuestosCoroca' },
+            { src: 'https://http2.mlstatic.com/D_NQ_NP_790984-MLA78333190102_082024-F.jpg', alt: 'RepuestosMaraCars' },
+            { src: 'https://repuestoscr.com.do/wp-content/uploads/sites/248/2022/05/logo.jpg', alt: 'RepuestosCYR' },
+            { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvM45GeQwsnw244fJUIQHMVgWY776TF11X6w&s', alt: 'Bolomey' },
+
+        ];
+    
+        // Busca el logo correspondiente al nombre de la tienda
+        const logo = tiendaLogos.find((tienda) => tienda.alt.toLowerCase() === storeName.toLowerCase());
+        return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
+    };
     return (
             <Container maxWidth="lg" sx={{ mt: 1 }}>
                             {/* Sección de fondo y filtros */}
@@ -866,14 +887,37 @@ function CategoryPage() {
                                             <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
                                             {`$${producto.precio_actual.toLocaleString("es-CL")}`}
                                             </Typography>
-                                            <Typography variant="body2" >
-                                                Marca: {producto.marca}
+                                            <Typography variant="body2">
+                                                <strong>Marca:</strong> {producto.marca || '-'}
                                             </Typography>
                                             <Typography variant="body2" >
-                                                Categoria: {producto.categoria}
+                                                <strong>Categoria:</strong> {producto.categoria || '-'}
                                             </Typography>
-                                            <Typography variant="body2">Tienda: {producto.empresa_procedencia}</Typography>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    mt: 1, // Margen superior para separación
+                                                }}
+                                            >
+                                                {getStoreLogo(producto.empresa_procedencia) ? (
+                                                    <img
+                                                        src={getStoreLogo(producto.empresa_procedencia)}
+                                                        alt={producto.empresa_procedencia}
+                                                        style={{
+                                                            width: '40px',  // Tamaño ancho del logo
+                                                            height: '50px', // Tamaño alto del logo
+                                                            objectFit: 'contain', // Ajuste para mantener la proporción
+                                                            marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    producto.empresa_procedencia || '-'
+                                                )}
+                                                <strong>{producto.empresa_procedencia}</strong>&nbsp;
 
+                                            </Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
@@ -900,54 +944,173 @@ function CategoryPage() {
                 
                 {/* Modal de comparación */}
                 <Modal open={openModal} onClose={handleCloseModal}>
-                    <Box sx={{
-                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                        bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, width: '80%', maxWidth: 800
-                    }}>
-                        <Typography variant="h6" gutterBottom>Comparación de Productos</Typography>
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            bgcolor: 'background.paper',
+                            borderRadius: 2,
+                            boxShadow: 24,
+                            p: 4,
+                            width: '80%',
+                            maxWidth: 800,
+                        }}
+                    >
+                        <Typography variant="h6" gutterBottom>
+                            Comparación de Productos
+                        </Typography>
                         <Grid container spacing={2} justifyContent="center">
                             {selectedProducts.map((producto, index) => (
-                                <Grid item xs={12} sm={4} key={index} gutterBottom>
-                                    <Card 
-                                        sx={{ boxShadow: 3, p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }}
+                                <Grid item xs={12} sm={4} key={index}>
+                                    <Card
+                                        sx={{
+                                            boxShadow: 3,
+                                            textAlign: 'center',
+                                            p: 2,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            height: '100%',
+                                            cursor: 'pointer',
+                                        }}
                                         onClick={() => navigate(`/product/${producto._id}`)}
-                                    >   
+                                    >
                                         <Box
                                             sx={{
                                                 height: 150, // Altura fija para el área de la imagen
+                                                width: '100%',
                                                 display: 'flex',
-                                                alignItems: 'center',
                                                 justifyContent: 'center',
+                                                alignItems: 'center',
+                                                backgroundColor: '#f2f2f2',
                                                 marginBottom: 2,
-                                                backgroundColor: '#f2f2f2', // Color de fondo para diferenciar el espacio reservado
+                                                borderRadius: 2,
                                             }}
                                         >
                                             {producto.imagenUrl ? (
                                                 <CardMedia
                                                     component="img"
-                                                    height="100%" // Ajusta la altura de la imagen dentro del contenedor
                                                     image={producto.imagenUrl}
                                                     alt={producto.nombre}
-                                                    sx={{ objectFit: 'cover' }}
+                                                    sx={{
+                                                        maxHeight: '100%',
+                                                        maxWidth: '100%',
+                                                        objectFit: 'contain',
+                                                    }}
                                                 />
                                             ) : (
-                                                <Typography variant="body2" color="text.secondary">Imagen no disponible</Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Imagen no disponible
+                                                </Typography>
                                             )}
                                         </Box>
-                                        <Typography variant="h6">{producto.nombre || "-"}</Typography>
-                                        <Typography>Precio: {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : "-"}</Typography>
-                                        <Typography>Marca: {producto.marca || "-"}</Typography>
-                                        <Typography>Descuento: {producto.descuento || "-"}</Typography>
-                                        <Typography>Tienda: {producto.descuento || "-"}</Typography>
+                                        {/* Contenedor del título */}
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                display: '-webkit-box', // Usamos un contenedor flexible para cortar texto
+                                                WebkitBoxOrient: 'vertical', // Orientación en vertical
+                                                WebkitLineClamp: 2, // Máximo 2 líneas visibles
+                                                overflow: 'hidden', // Oculta el texto que exceda las líneas
+                                                textAlign: 'center',
+                                                fontSize: { xs: '1rem', sm: '1.2rem' }, // Responsivo en pantallas pequeñas
+                                                marginBottom: 2,
+                                            }}
+                                        >
+                                            {producto.nombre || '-'}
+                                        </Typography>
+                                        {/* Contenedor de las características */}
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-start',
+                                                width: '100%', // Asegura que todo quede alineado
+                                                gap: 1, // Espaciado entre líneas
+                                            }}
+                                        >
+                                            {/*Precio*/}
+                                            <Typography variant="body2">
+                                                <strong>Precio:</strong> {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : '-'}
+                                            </Typography>
+
+                                            {/*Marca*/}
+                                            <Typography variant="body2">
+                                                <strong>Marca:</strong> {producto.marca || '-'}
+                                            </Typography>
+
+                                            {/* Modelo*/}
+                                            <Typography variant="body2">
+                                                <strong>Modelo:</strong> {producto.modelo || '-'}
+                                            </Typography>
+
+                                            {/* Numero de pieza*/}
+                                            <Typography variant="body2">
+                                                <strong>N. Pieza:</strong> {producto.numero_pieza || '-'}
+                                            </Typography>
+
+                                            {/*Tipo de vehiculo*/}
+                                            <Typography variant="body2">
+                                                <strong>Tipo vehiculo:</strong> {producto.tipo_vehiculo || '-'}
+                                            </Typography>
+                                            
+
+
+                                            {/*Material*/}
+                                            <Typography variant="body2">
+                                                <strong>Material:</strong> {producto.material || '-'}
+                                            </Typography>
+
+                                            
+
+                                            {/* Descuento*/}
+                                            <Typography variant="body2">
+                                                <strong>Descuento:</strong> {producto.descuento || '-'}
+                                            </Typography>
+
+
+
+
+                                            {/* Tienda*/}
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    mt: -1, // Margen superior para separación
+                                                }}
+                                            >
+                                                {getStoreLogo(producto.empresa_procedencia) ? (
+                                                    <img
+                                                        src={getStoreLogo(producto.empresa_procedencia)}
+                                                        alt={producto.empresa_procedencia}
+                                                        style={{
+                                                            width: '40px',  // Tamaño ancho del logo
+                                                            height: '50px', // Tamaño alto del logo
+                                                            objectFit: 'contain', // Ajuste para mantener la proporción
+                                                            marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    producto.empresa_procedencia || '-'
+                                                )}
+                                                <strong>{producto.empresa_procedencia}</strong>&nbsp;
+
+                                            </Typography>
+                                        </Box>
                                     </Card>
                                 </Grid>
                             ))}
                         </Grid>
-                        <Button onClick={handleCloseModal} variant="contained" color="secondary" sx={{ mt: 2 }}>
-                            Cerrar
-                        </Button>
                     </Box>
                 </Modal>
+
+
+
             </Container>
     );
     

@@ -9,6 +9,7 @@ import { initialMarcas } from '../constants';
 import { Breadcrumbs } from '@mui/material';
 import { CATEGORIES } from "../constants";
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
+import { tienda } from "../constants";
 
 function useQuery() {
     const location = useLocation(); // Obtenemos la ubicación actual
@@ -109,31 +110,31 @@ function SearchResults() {
 
     }, [location.search]);*/
 
-
-    const fetchProducts = (params) => {
+    //EFECTO QUE LLAMA A LA API CON LOS FILTROS QUE VIENEN DEL HOME O LA BUSQUEDA DE LA BARRA
+    //NO MODIFICAR A MENOS QUE SEPA QUE HACE
+    const fetchProducts = async (params) => {
         if (!params.marca && !params.modelo && !params.categoria && !params.nombre) {
             console.log("No hay parámetros válidos para ejecutar fetchProducts.");
+            setErrorMessage("Filtros vacíos. Por favor, ajusta tu búsqueda.");
+            //setProductos([]); // Limpia productos si no hay filtros
             return;
         }
-        console.log(params)
-        setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
-        fetchWithFallback(`/productos/buscar-similares`, { params })
-        .then(response => {
-            console.log("Respuesta completa de la API:", response);
-            setProductos(response.data);
+        try {
 
-            const data = response.data || [];
-            console.log("Datos recibidos de la API:", data);
-            
-            console.log("Productos recibidos:", response.data);
-            if (response.data.length === 0) {
-                setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
-            }
-        })
-        .catch(error => {
+            console.log("Parámetros recibidos en FetchProducts desde apply:", params);
+
+            setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
+            const productos = await fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}`
+            );            
+            setProductos(productos);
+            console.log("Respuesta completa de la API:", productos);
+
+    }   catch(error ) {
             console.error("Error al obtener productos:", error);
             setErrorMessage(error.response?.data?.message || "No se encontraron productos que coincidan con la búsqueda.");
-        });
+        
+            
+        };
     };
     
     const handlePageChange = (event, value) => setPage(value);
@@ -321,7 +322,7 @@ function SearchResults() {
             return;
         }
     
-        console.log("Aplicando filtros:", params); // Verifica los filtros en la consola
+        console.log("Aplicando filtros en applyfilter en SearhcResults:", params); // Verifica los filtros en la consola
 
         if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
             fetchProducts(params); // Envía los filtros a fetchProducts
@@ -333,7 +334,20 @@ function SearchResults() {
     const handleCloseModal = () => {
         setOpenModal(false);
     };
+    //FUNCION QUE TOMA LOS LOGOS DE LA LISTA DE TIENDAS
+    const getStoreLogo = (storeName) => {
+        const tiendaLogos = [
+            { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBd52oJwbk2yXum3Ons59Xs_nFeul7Z7kK7w&s', alt: 'RepuestosCoroca' },
+            { src: 'https://http2.mlstatic.com/D_NQ_NP_790984-MLA78333190102_082024-F.jpg', alt: 'RepuestosMaraCars' },
+            { src: 'https://repuestoscr.com.do/wp-content/uploads/sites/248/2022/05/logo.jpg', alt: 'RepuestosCYR' },
+            { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvM45GeQwsnw244fJUIQHMVgWY776TF11X6w&s', alt: 'Bolomey' },
 
+        ];
+    
+        // Busca el logo correspondiente al nombre de la tienda
+        const logo = tiendaLogos.find((tienda) => tienda.alt.toLowerCase() === storeName.toLowerCase());
+        return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
+    };
     
     return (
         <Container maxWidth="lg" sx={{ mt: 1 }}>
@@ -671,9 +685,37 @@ function SearchResults() {
                                             <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
                                             {`$${producto.precio_actual.toLocaleString("es-CL")}`}
                                             </Typography>
-                                            <Typography variant="body2">Marca: {producto.marca}</Typography>
-                                            <Typography variant="body2">Categoria: {producto.categoria}</Typography>
-                                            <Typography variant="body2">Tienda: {producto.empresa_procedencia}</Typography>
+                                            <Typography variant="body2">
+                                                <strong>Marca:</strong> {producto.marca || '-'}
+                                            </Typography>
+                                            <Typography variant="body2" >
+                                                <strong>Categoria:</strong> {producto.categoria || '-'}
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    mt: 1, // Margen superior para separación
+                                                }}
+                                            >
+                                                {getStoreLogo(producto.empresa_procedencia) ? (
+                                                    <img
+                                                        src={getStoreLogo(producto.empresa_procedencia)}
+                                                        alt={producto.empresa_procedencia}
+                                                        style={{
+                                                            width: '40px',  // Tamaño ancho del logo
+                                                            height: '50px', // Tamaño alto del logo
+                                                            objectFit: 'contain', // Ajuste para mantener la proporción
+                                                            marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    producto.empresa_procedencia || '-'
+                                                )}
+                                                <strong>{producto.empresa_procedencia}</strong>&nbsp;
+
+                                            </Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
@@ -699,52 +741,133 @@ function SearchResults() {
 
             {/* Modal de comparación */}
             <Modal open={openModal} onClose={handleCloseModal}>
-                <Box sx={{
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, width: '80%', maxWidth: 800
-                }}>
+                <Box                         
+                    sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            bgcolor: 'background.paper',
+                            borderRadius: 2,
+                            boxShadow: 24,
+                            p: 4,
+                            width: '80%',
+                            maxWidth: 800,
+                    }}>
                     <Typography variant="h6" gutterBottom>Comparación de Productos</Typography>
                     <Grid container spacing={2} justifyContent="center">
                         {selectedProducts.map((producto, index) => (
-                            <Grid item xs={12} sm={4} key={index} gutterBottom>
-                                <Card 
-                                    sx={{ boxShadow: 3, p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }}
-                                    onClick={() => navigate(`/product/${producto._id}`)}
-                                >   
-                                    <Box
+                            <Grid item xs={12} sm={4} key={index}>
+                                <Card
                                         sx={{
-                                            height: 150, // Altura fija para el área de la imagen
+                                            boxShadow: 3,
+                                            textAlign: 'center',
+                                            p: 2,
                                             display: 'flex',
+                                            flexDirection: 'column',
                                             alignItems: 'center',
-                                            justifyContent: 'center',
-                                            marginBottom: 2,
-                                            backgroundColor: '#f2f2f2', // Color de fondo para diferenciar el espacio reservado
+                                            justifyContent: 'space-between',
+                                            height: '100%',
+                                            cursor: 'pointer',
                                         }}
+                                        onClick={() => navigate(`/product/${producto._id}`)}
+                                >
+                                    <Box
+                                            sx={{
+                                                height: 150, // Altura fija para el área de la imagen
+                                                width: '100%',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                backgroundColor: '#f2f2f2',
+                                                marginBottom: 2,
+                                                borderRadius: 2,
+                                            }}
                                     >
-                                        {producto.imagenUrl ? (
-                                            <CardMedia
-                                                component="img"
-                                                height="100%" // Ajusta la altura de la imagen dentro del contenedor
-                                                image={producto.imagenUrl}
-                                                alt={producto.nombre}
-                                                sx={{ objectFit: 'cover' }}
-                                            />
-                                        ) : (
-                                            <Typography variant="body2" color="text.secondary">Imagen no disponible</Typography>
+                                      {producto.imagenUrl ? (
+                                                <CardMedia
+                                                    component="img"
+                                                    image={producto.imagenUrl}
+                                                    alt={producto.nombre}
+                                                    sx={{
+                                                        maxHeight: '100%',
+                                                        maxWidth: '100%',
+                                                        objectFit: 'contain',
+                                                    }}
+                                                />
+                                            ) : (
+                                            <Typography variant="body2" color="text.secondary">
+                                                Imagen no disponible
+                                            </Typography>
                                         )}
                                     </Box>
-                                    <Typography variant="h6">{producto.nombre || "-"}</Typography>
-                                    <Typography>Precio: {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : "-"}</Typography>
-                                    <Typography>Marca: {producto.marca || "-"}</Typography>
-                                    <Typography>Descuento: {producto.descuento || "-"}</Typography>
-                                    <Typography>Tienda: {producto.descuento || "-"}</Typography>
+                                        {/* Contenedor del título */}
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                display: '-webkit-box', // Usamos un contenedor flexible para cortar texto
+                                                WebkitBoxOrient: 'vertical', // Orientación en vertical
+                                                WebkitLineClamp: 2, // Máximo 2 líneas visibles
+                                                overflow: 'hidden', // Oculta el texto que exceda las líneas
+                                                textAlign: 'center',
+                                                fontSize: { xs: '1rem', sm: '1.2rem' }, // Responsivo en pantallas pequeñas
+                                                marginBottom: 2,
+                                            }}
+                                        >
+                                            {producto.nombre || '-'}
+                                        </Typography>
+                                        {/* Contenedor de las características */}
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-start',
+                                                width: '100%', // Asegura que todo quede alineado
+                                                gap: 1, // Espaciado entre líneas
+                                            }}
+                                        >
+                                            <Typography variant="body2">
+                                                <strong>Precio:</strong> {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : '-'}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                <strong>Marca:</strong> {producto.marca || '-'}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                <strong>Descuento:</strong> {producto.descuento || '-'}
+                                            </Typography>
+                                            
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    mt: 0, // Margen superior para separación
+                                                }}
+                                            >
+                                                {getStoreLogo(producto.empresa_procedencia) ? (
+                                                    <img
+                                                        src={getStoreLogo(producto.empresa_procedencia)}
+                                                        alt={producto.empresa_procedencia}
+                                                        style={{
+                                                            width: '40px',  // Tamaño ancho del logo
+                                                            height: '50px', // Tamaño alto del logo
+                                                            objectFit: 'contain', // Ajuste para mantener la proporción
+                                                            marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    producto.empresa_procedencia || '-'
+                                                )}
+                                                <strong>{producto.empresa_procedencia}</strong>&nbsp;
+
+                                            </Typography>
+                                        </Box>
+                                
                                 </Card>
                             </Grid>
                         ))}
                     </Grid>
-                    <Button onClick={handleCloseModal} variant="contained" color="secondary" sx={{ mt: 2 }}>
-                        Cerrar
-                    </Button>
                 </Box>
             </Modal>
         </Container>

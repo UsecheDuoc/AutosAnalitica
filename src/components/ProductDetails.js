@@ -35,6 +35,10 @@ function Arrow(props) {
         </div>
     );
 }
+
+
+
+
 function ProductDetails() {
     const { id } = useParams();
     const [producto, setProducto] = useState(null);
@@ -46,10 +50,17 @@ function ProductDetails() {
     const [product, setProduct] = useState(null);
     const [productos, setProductos] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    
+
+
+    // Función para manejar la selección de un producto relacionado
+const handleRelatedProductClick = (relatedProductId) => {
+    navigate(`${relatedProductId}`);
+    console.log('Lo que tomo de la url para id: ', relatedProductId)
+};
+
     useEffect(() => {
         const fetchData = async () => {
-            const productRequest = fetchWithFallback(`${id}`);
+            const productRequest = await fetchWithFallback(`/productos?id=${encodeURIComponent(id)}`);
             const similarProductsRequest = fetchWithFallback(`/productos/buscar-similares?id=${id}`);
             const relatedProductsRequest = fetchWithFallback(`/productos/relacionados/${id}`);
     
@@ -142,10 +153,7 @@ function ProductDetails() {
         fetchRelated();
     }, [id]);
 
-    // Función para manejar la selección de un producto relacionado
-    const handleRelatedProductClick = (relatedProductId) => {
-        navigate(`${relatedProductId}`);
-    };
+
 
     const handlePurchase = (link) => {
         if (link) {
