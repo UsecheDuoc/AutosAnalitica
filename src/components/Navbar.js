@@ -1,23 +1,23 @@
 // src/components/Navbar.js
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, InputBase, Button, Box, Select, MenuItem } from '@mui/material';
-import { Search as SearchIcon, Language as LanguageIcon, Person as PersonIcon } from '@mui/icons-material';
-import { Link, useNavigate } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, IconButton, InputBase, Button, Box, Select, MenuItem,Link,  Drawer,List, ListItem, ListItemButton, ListItemText, } from '@mui/material';
+import { Search as SearchIcon, Person as PersonIcon, Menu as MenuIcon } from '@mui/icons-material';
+import { useNavigate,useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+
+const categories = [
+    { name: 'Inicio', id: 'inicio' },
+    { name: 'Categorías', id: 'categorias' },
+    { name: 'Dashboard', href: '/graficos' }, // Incluye el href aquí
+  ];
 
 function Navbar() {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
-    const [language, setLanguage] = useState('en');
-    const categories = [
-        { name: 'Auto Parts' },
-        { name: 'Interior Accessories' },
-        { name: 'Exterior Accessories' },
-        { name: 'Truck and Towing' },
-        { name: 'Tools' },
-        { name: 'Chemicals, Oil & Wash' },
-        { name: 'Performance' },
-    ];
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const location = useLocation();
 
     const handleCategorySelect = (category) => {    
         console.log('Selected Category:', category);
@@ -31,91 +31,170 @@ function Navbar() {
         }
     };
 
-    const handleLanguageChange = (event) => {
-        setLanguage(event.target.value);
-        // Aquí puedes implementar la lógica para cambiar el idioma de la página
-    };
-
     // Nueva función para manejar el clic en el logo
     const handleLogoClick = () => {
         setSearchQuery('');  // Limpia la barra de búsqueda
         navigate('/');       // Redirige al inicio
     };
+    
+    const handleNavigation = (id, href) => {
+        if (id) {
+          if (location.pathname !== '/') {
+            navigate('/'); // Navega primero al inicio si estás en otra página.
+            setTimeout(() => handleScrollToSection(id), 100); // Desplázate después de navegar.
+          } else {
+            handleScrollToSection(id); // Desplázate directamente si ya estás en la página principal.
+          }
+        } else if (href) {
+          navigate(href); // Redirige directamente si hay un `href`.
+        }
+      };
+
+    const handleScrollToSection = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+      
 
     return (
-        <AppBar position="static" sx={{ bgcolor: '#000', padding: '15px 50px' }}>
-            <Toolbar     
-            sx={{
-                display: 'flex',
-                justifyContent: 'space-between', // Distribuye los elementos a los lados y centro
-                alignItems: 'center',
-                maxWidth: '1400px', // Ancho máximo del navbar
-                width: '100%',
-                mx: 'auto', // Centra el Navbar horizontalmente con margen automático
+        <AppBar 
+            position="sticky"
+            sx={{ 
+                bgcolor: '#000', 
+                boxShadow: 3, // Agregar sombra al navbar
 
-                gap: 4, // Espacio entre los elementos
-                padding: '0 20px'
+                //margin: 0,
+                //padding: 0, 
+                padding: { xs: '10px', md: '10px 20px' }, // Ajustar padding para pantallas pequeñas
+            }}>
+            
+            <Toolbar
+                sx={{
+                display: 'flex',
+                justifyContent: 'space-around', // Cambia a 'space-around' para distribuir los elementos de manera uniforme
+                alignItems: 'center',
+                maxWidth: '1400px',
+                width: '100%',
+                mx: 'auto',
+                px: { xs: 2, md: 4 },
+                }}
+            >
+
+
+                {/* Drawer para menú en pantallas pequeñas */}
+                <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+                <Box sx={{ width: 250 }} role="presentation" onClick={() => setDrawerOpen(false)}>
+                    <List>
+                    {categories.map((category) => (
+                        <ListItem key={category.name} disablePadding>
+                            <ListItemButton onClick={() => handleNavigation(category.id, category.href || null)}>
+                                <ListItemText primary={category.name} />
+                            </ListItemButton>
+                        </ListItem>
+                    ))}
+                    </List>
+                </Box>
+                </Drawer>
+
+
+                {/* Logo */}
+                <Typography
+                variant="h5"
+                onClick={handleLogoClick}
+                sx={{
+                    fontWeight: 'bold',
+                    color: '#FFD700',
+                    cursor: 'pointer',
+                    fontSize: { xs: '1.2rem', md: '1.5rem' },
+                    ml: { md: '0' },
                 }}
                 >
-                <Sidebar categories={categories} onCategorySelect={handleCategorySelect} />
-
-                {/* Logo y botón de añadir vehículo */}
-                <Box sx={{ display: 'flex', alignItems: 'center', mr: 'auto' }}>
-                    <Typography
-                        variant="h5"
-                        sx={{ fontWeight: 'bold', color: '#FFD700', cursor: 'pointer' }}
-                        onClick={handleLogoClick}  // Ejecuta handleLogoClick al hacer clic en el logo
-                    >
-                        AutosAnalítica
-                    </Typography>
-                </Box>
+                AutosAnalítica
+                </Typography>
 
                 {/* Barra de búsqueda */}
                 <Box
-                    component="form"
-                    onSubmit={handleSearch}
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        bgcolor: 'white',
-                        borderRadius: 1,
-                        px: 2,
-                        width: { xs: '100%', sm: '60%', md: '60%' },
-                        maxWidth: '600px',
-                        mx: 'auto', // Centra la barra de búsqueda en el navbar
-                        boxShadow: 1,
-                        mr: 30, // Ajusta este valor según cuánto quieras moverla hacia la izquierda
+                component="form"
+                onSubmit={handleSearch}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'white',
+                    borderRadius: 1,
+                    px: 2,
+                    width: { xs: '100%', sm: '60%', md: '40%' },
+                    maxWidth: '600px',
+                    mx: 'auto',
+                    boxShadow: 1,
+                }}
+                >
+                <InputBase
+                    placeholder="Buscar productos…"
+                    inputProps={{ 'aria-label': 'search' }}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ flex: 1 }}
+                />
+                <IconButton type="submit" sx={{ color: 'black' }}>
+                    <SearchIcon />
+                </IconButton>
+                </Box>
 
+                {/* Menú de hamburguesa en pantallas pequeñas */}
+                <IconButton
+                edge="start"
+                color="inherit"
+                aria-label="menu"
+                sx={{ display: { xs: 'flex', md: 'none' } }}
+                onClick={() => setDrawerOpen(true)}
+                >
+                <MenuIcon />
+                </IconButton>
+
+                {/* Botones de categorías en pantallas grandes */}
+                <Box
+                    sx={{
+                        display: { xs: 'none', md: 'flex' },
+                        alignItems: 'center',
+                        gap: 2,
                     }}
                     >
-                    <InputBase
-                        placeholder="Buscar productos…"
-                        inputProps={{ 'aria-label': 'search' }}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ flex: 1 }}
-                    />
-
-
-                    {/* Botones de sesión alineados a la derecha */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto', gap: 2 }}>
-                        <IconButton sx={{ color: 'white' }}>
-                            <PersonIcon />
-                        </IconButton>
-                        <Button color="inherit" component={Link} to="/login">Login</Button>
-                        <Button color="inherit" component={Link} to="/register">Register</Button>
+                    {categories.map((category) =>
+                        category.id ? (
+                        <button
+                            key={category.name}
+                            onClick={() => handleNavigation(category.id, null)}
+                            style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#FFD700',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            }}
+                        >
+                            {category.name}
+                        </button>
+                        ) : (
+                        <button
+                            key={category.name}
+                            onClick={() => handleNavigation(null, category.href)}
+                            style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#FFD700',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            }}
+                        >
+                            {category.name}
+                        </button>
+                        )
+                    )}
                     </Box>
 
 
-                </Box>
-
-                {/* Iconos y botones de sesión */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-
-                    <IconButton sx={{ color: 'white' }}>
-                        <PersonIcon />
-                    </IconButton>
-                </Box>
             </Toolbar>
         </AppBar>
     );

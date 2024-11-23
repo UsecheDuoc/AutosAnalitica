@@ -8,8 +8,11 @@ import Slider from 'react-slick';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import config from '../config';
+import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+console.log('ProductDetails montado');
 
 
 function Arrow(props) {
@@ -42,44 +45,70 @@ function ProductDetails() {
     const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [productos, setProductos] = useState([]);
-
-    useEffect(() => {
-        // Obtener detalles del producto actual
-        axios.get(`${config.apiBaseUrl}/${id}`)
-            .then(response => {
-                console.log("Producto obtenido:", response.data);
-                setProducto(response.data);
-                setErrorMessage(null);
-            })
-            .catch(error => {
-                console.error("Error al obtener los detalles del producto:", error);
-                setErrorMessage("Error al obtener los detalles del producto.");
-            });
+    const [isLoading, setIsLoading] = useState(false);
     
-        // Obtener productos similares
-        axios.get(`${config.apiBaseUrl}/buscar-similares?id=${id}`)
-            .then(response => {
-                console.log("Productos similares:", response.data);
-                setSimilarProducts(response.data.slice(0, 3)); // Limita a 3 productos similares
-            })
-            .catch(error => {
-                console.error("Error al obtener productos similares:", error);
-                setErrorMessage("Error al obtener productos similares.");
-            });
+    useEffect(() => {
+        const fetchData = async () => {
+            const productRequest = fetchWithFallback(`${id}`);
+            const similarProductsRequest = fetchWithFallback(`/productos/buscar-similares?id=${id}`);
+            const relatedProductsRequest = fetchWithFallback(`/productos/relacionados/${id}`);
+    
+            const results = await Promise.allSettled([
+                productRequest,
+                similarProductsRequest,
+                relatedProductsRequest,
+            ]);
+    
+            // Manejo de resultados de cada solicitud
+            results.forEach((result, index) => {
+                if (result.status === "fulfilled") {
+                    const data = result.value?.data || []; // Asegúrate de que siempre sea un array
 
-    // Obtener productos relacionados
-        axios.get(`${config.apiBaseUrl}/relacionados/${id}`)
-        .then(response => {
-            console.log("Productos relacionados:", response.data);
-            setRelatedProducts(response.data);
-        })
-            .catch(error => console.error("Error al obtener productos relacionados:", error));
+                    switch (index) {
+                        case 0: // Detalles del producto
+                            console.log("Producto obtenido:", result.value);
+                            setProducto(result.value);
+                            setErrorMessage(null);
+                            break;
+                        case 1: // Productos similares
+                            console.log("Productos similares:", result.value.data);
+                            setSimilarProducts(Array.isArray(result.value?.data) ? result.value.data.slice(0, 3) : []); // Verificar que sea un array
+                            break;
+                        case 2: // Productos relacionados
+                            console.log("Productos relacionados:", result.value.data);
+                            setRelatedProducts(Array.isArray(result.value?.data) ? result.value.data : []); // Verificar que sea un array
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    console.error(`Error en la solicitud ${index}:`, result.reason);
+                    // Manejo de errores para cada caso
+                    switch (index) {
+                        case 0:
+                            setErrorMessage("Error al obtener los detalles del producto.");
+                            break;
+                        case 1:
+                            setSimilarProducts([]); // Asegura que sea un array vacío
+                            break;
+                        case 2:
+                            setRelatedProducts([]); // Asegura que sea un array vacío
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+        };
+    
+        fetchData();
     }, [id]);
+    
     
     {/* Productos Relacionados */}
     // Llamada para obtener los detalles del producto basado en el ID
     useEffect(() => {
-        fetchProductDetails(id);
+        fetchProductDetails();
 
         // Al cambiar el producto, desplazarse al inicio de la página
         window.scrollTo(0, 0);
@@ -87,32 +116,35 @@ function ProductDetails() {
 
     {/* Descuento de productos */}
     useEffect(() => {
-        axios.get(`${config.apiBaseUrl}/productos-con-descuento`)
+        fetchWithFallback(`/productos/productos-con-descuento`)
             .then(response => {
                 setProductos(response.data); // `descuento` y `aumento` ahora están disponibles en cada producto
             })
             .catch(error => console.error("Error al obtener productos:", error));
     }, []);
-    const productosConDescuento = productos.filter(producto => producto.descuento > 0);
+    //const productosConDescuento = productos.filter(producto => producto.descuento > 0);
 
   
     useEffect(() => {
-        // Llama a la API para obtener productos relacionados
-        const fetchRelatedProducts = async () => {
+        const fetchRelated = async () => {
             try {
-                const response = await axios.get(`${config.apiBaseUrl}/relacionados/${id}`);
-                setRelatedProducts(response.data);
+                const response = await fetchWithFallback(`/productos/relacionados/${id}`
+                );
+                const data = await response.json();
+                console.log("Productos relacionados (API con fallback):", data);
+                setRelatedProducts(data);
             } catch (error) {
                 console.error("Error al obtener productos relacionados:", error);
+                setRelatedProducts([]); // Asegura que el estado no sea indefinido en caso de error
             }
         };
-
-        fetchRelatedProducts();
+    
+        fetchRelated();
     }, [id]);
 
     // Función para manejar la selección de un producto relacionado
     const handleRelatedProductClick = (relatedProductId) => {
-        navigate(`/product/${relatedProductId}`);
+        navigate(`${relatedProductId}`);
     };
 
     const handlePurchase = (link) => {
@@ -124,18 +156,22 @@ function ProductDetails() {
     };
 
     const fetchProductDetails = async (id) => {
+        setIsLoading(true); // Inicia el estado de carga
+
         // Aquí deberías agregar la lógica para obtener los detalles del producto basado en el ID
         // Ejemplo:
         try {
-            const response = await fetch(`${config.apiBaseUrl}/${id}`);
+            const response = await fetchWithFallback(`/productos/${id}`);
             const data = await response.json();
             setProduct(data);
             // Suponiendo que el producto tiene un campo 'relatedProducts'
             setRelatedProducts(data.relatedProducts || []);
         } catch (error) {
             console.error("Error fetching product details:", error);
-        }
-    };
+            //setErrorMessage("Error al obtener los detalles del producto. Intenta más tarde.");
+        } finally {
+            setIsLoading(false); // Finaliza el estado de carga
+    }    };
 
     if (errorMessage) {
         return <Typography variant="h6" align="center">{errorMessage}</Typography>;
@@ -161,13 +197,19 @@ function ProductDetails() {
     };
     // Definir las variables para el cálculo de descuento o aumento
     // Calcular el último precio en el historial de precios y el cambio porcentual
-    const lastPrice = producto.historial_precios && producto.historial_precios.length > 0
-        ? producto.historial_precios.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[producto.historial_precios.length - 1].precio
-        : null;
+    const lastPrice = producto.historial_precios?.length
+    ? producto.historial_precios
+          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+          .at(-1)?.precio
+    : null;
+
 
     const priceDifference = lastPrice !== null ? producto.precio_actual - lastPrice : 0;
-    const percentageChange = lastPrice !== null ? ((Math.abs(priceDifference) / lastPrice) * 100).toFixed(2) : 0;
-
+    const percentageChange =
+        lastPrice !== null
+            ? Math.abs(priceDifference / lastPrice) * 100
+            : 0;
+    
         // Mostrar por consola los valores
     console.log("Precio actual:", producto.precio_actual);
     console.log("Último precio en historial:", lastPrice);
@@ -321,9 +363,7 @@ function ProductDetails() {
                     <Typography variant="h5" color="primary" sx={{ mt: 2 }}>
                         Precio: {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : "-"}
                     </Typography>
-                    <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-                        {producto.descripcion}
-                    </Typography>
+
                     <Button 
                         variant="contained" 
                         color="primary" 
@@ -357,9 +397,8 @@ function ProductDetails() {
                     <Typography variant="h6">Descripción del producto</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary">
-                        {/* Aquí puedes agregar el texto de descripción */}
-                        Este dispensador de agua de 10 litros es fácil de usar y proporciona agua fresca en todo momento.
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+                        {producto.descripcion}
                     </Typography>
                 </AccordionDetails>
             </Accordion>
@@ -437,7 +476,7 @@ function ProductDetails() {
                                     <TableCell align="center" key={index}>
                                         {prod.precio_actual ? `$${prod.precio_actual.toLocaleString('es-CL')}` : "-"}
                                     </TableCell>
-                                ))}
+                                ))} 
                             </TableRow>
                             <TableRow>
                                 <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Marca</TableCell>
@@ -467,34 +506,38 @@ function ProductDetails() {
              <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p:1 , mb: 5 }}>
              <div className="mt-8 px-4 relative">
              <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
-             <Slider
-                 {...settings}
-                 arrows={false} // Eliminamos las flechas
-                 autoplay={true} // Activamos el desplazamiento automático
-                 autoplaySpeed={2000} // Intervalo de 2 segundos
-             >
-                 {relatedProducts.map((related, index) => (
-                 <div key={index} className="px-2">
-                    <Link to={`/product/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}> {/* Enlace al ProductDetails.js con el ID */}
-
-                     <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
-                     <img
-                         src={producto.imagenUrl || "https://via.placeholder.com/300"}
-                         alt={producto.nombre}
-                         className="h-44 w-full object-cover"
-                     />
-                     <div className="p-4">
-                         <h3 className="font-semibold text-lg">{producto.nombre}</h3>
-                         <p className="text-green-500 font-bold mt-2">
-                         ${producto.precio_actual.toLocaleString("es-CL")}
-                         </p>
-                         <p className="text-gray-500 text-sm mt-1">{producto.descripcion}</p>
-                     </div>
-                     </div>
-                     </Link>
-                 </div>
-                 ))}
-             </Slider>
+             {Array.isArray(relatedProducts) && relatedProducts.length > 0 ? (
+                <Slider
+                    {...settings}
+                    arrows={false}
+                    autoplay={true}
+                    autoplaySpeed={2000}
+                >
+                    {relatedProducts.map((related, index) => (
+                        <div key={index} className="px-2">
+                            <Link to={`/productos/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
+                                    <img
+                                        src={related.imagenUrl || "https://via.placeholder.com/300"}
+                                        alt={related.nombre || "Sin nombre"}
+                                        className="h-44 w-full object-cover"
+                                    />
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-lg">{related.nombre || "Sin nombre"}</h3>
+                                        <p className="text-green-500 font-bold mt-2">
+                                            ${related.precio_actual?.toLocaleString("es-CL") || "Precio no disponible"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
+                    ))}
+                </Slider>
+            ) : (
+                <Typography variant="body2" color="textSecondary" align="center">
+                    No hay productos destacados disponibles.
+                </Typography>
+            )}
              </div>
          </Box>
         </Container>

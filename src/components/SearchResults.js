@@ -5,9 +5,16 @@ import { Container, Typography, Grid, Card, CardMedia, CardContent,Checkbox, Box
 import axios from 'axios';
 import { Link } from 'react-router-dom';  // Asegúrate de importar Link
 import config from '../config';
+import { initialMarcas } from '../constants';
+import { Breadcrumbs } from '@mui/material';
+import { CATEGORIES } from "../constants";
+import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 
 function useQuery() {
+    const location = useLocation(); // Obtenemos la ubicación actual
+    console.log("URL completa:", location.pathname + location.search); // Mostramos la URL en la consola
     return new URLSearchParams(useLocation().search);
+    
 }
 
 function SearchResults() {
@@ -31,35 +38,101 @@ function SearchResults() {
     const [modelos, setModelos] = useState([]); // Lista de modelos específicos según la marca seleccionada
     const { categoryName = '' } = useParams(); // Inicializa categoryName como cadena vacía si está indefinido
     const location = useLocation();
+    const [errorMessage, setErrorMessage] = useState(null); // Mensaje de error
+    const [filtros, setFiltros] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
 
     // Llama a applyFilters cada vez que cambie un filtro
     useEffect(() => {
         applyFilters();
     }, [searchTerm, brandFilter, modelFilter, discountFilter, storeFilter, categoryFilter, sortOrder]);
     
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+    
+        const marca = queryParams.get('marca') || '';
+        const modelo = queryParams.get('modelo') || '';
+        const categoria = queryParams.get('categoria') || '';
+        const nombre = queryParams.get("q") || "";
 
-    const fetchProducts = () => {
+        // Actualiza los filtros solo si hay valores definidos
+        setBrandFilter(nombre|| "");
+        setBrandFilter(marca || "");
+        setModelFilter(modelo || "");
+        setCategoryFilter(categoria || "");
+
+        applyFilters();
+    }, [location.search]);
+
+
+    //Importar las marcas desde mi constants.js
+    useEffect(() => {
+        setMarcas(initialMarcas);
+    }, []);
+
+    // Leer parámetros de búsqueda desde la URL
+    /*useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        console.log('Recibi estos filtros desde productLists.js en CategoryPage.js',{searchParams})
+
+        const marca = searchParams.get("marca") || '';
+        const modelo = searchParams.get("modelo") || '';
+        const categoria = searchParams.get("categoria") || '';
+        const searchTerm = searchParams.get('q') || ''; // Para búsquedas por nombre
+
+        const descuento = searchParams.get("descuento") || '';
+        const tienda = searchParams.get("tienda") || '';
+        const sortOrder = searchParams.get("sortOrder") || '';
+
+
+        // Actualiza los filtros en el estado
+        setBrandFilter(marca);
+        setModelFilter(modelo);
+        setCategoryFilter(categoria);
+        setDiscountFilter(descuento);
+        setStoreFilter(tienda);
+        setSortOrder(sortOrder);
+
+        // Fetch inicial combinando filtros y búsqueda
+        const params = {
+        nombre: searchTerm || undefined,
+        marca: marca || undefined,
+        modelo: modelo || undefined,
+        categoria: categoria || undefined,
+        descuento: descuento || undefined,
+        tienda: tienda || undefined,
+    };
+    
+    //LLamo a la funcion para que busque con los parametros nuevos
+    fetchProducts(params);
+    applyFilters();
+
+    }, [location.search]);*/
+
+
+    const fetchProducts = (params) => {
+        if (!params.marca && !params.modelo && !params.categoria && !params.nombre) {
+            console.log("No hay parámetros válidos para ejecutar fetchProducts.");
+            return;
+        }
+        console.log(params)
         setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
-        axios.get(`${config.apiBaseUrl}/buscar-similares`, {
-            params: {
-                nombre: searchTerm, // Solo aplicar la búsqueda en el nombre
-                marca: brandFilter || undefined,
-                //modelo: modelFilter || undefined,
-                categoria: categoryFilter || undefined,
-                descuento: discountFilter || undefined,
-                tienda: storeFilter || undefined
-            }
-        })
+        fetchWithFallback(`/productos/buscar-similares`, { params })
         .then(response => {
-            console.log("Productos recibidos:", response.data);
+            console.log("Respuesta completa de la API:", response);
             setProductos(response.data);
+
+            const data = response.data || [];
+            console.log("Datos recibidos de la API:", data);
+            
+            console.log("Productos recibidos:", response.data);
             if (response.data.length === 0) {
                 setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
             }
         })
         .catch(error => {
             console.error("Error al obtener productos:", error);
-            setErrorMessage(error.response?.data?.message || "Error al obtener productos de la API.");
+            setErrorMessage(error.response?.data?.message || "No se encontraron productos que coincidan con la búsqueda.");
         });
     };
     
@@ -92,7 +165,7 @@ function SearchResults() {
     
     const fetchProductosPorMarca = async (nombreMarca) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/marca`, { params: { nombre: nombreMarca } });
+            const response = await fetchWithFallback(`/productos/marca`, { params: { nombre: nombreMarca } });
             setProductos(response.data);
             if (response.data.length === 0) {
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
@@ -109,7 +182,7 @@ function SearchResults() {
 
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/categoria`, {
+            const response = await fetchWithFallback(`/productos/categoria`, {
                 params: {
                     categoria: nombreCategoria,
                     marca: brandFilter || undefined,
@@ -135,17 +208,14 @@ function SearchResults() {
     const handleBrandChange = async (event) => {
         const selectedBrand = event.target.value;
         setBrandFilter(selectedBrand);
-        setBrandFilter(selectedBrand);
         setModelFilter(''); // Reinicia el filtro de modelo cuando cambia la marca
         fetchModelosPorMarca(selectedBrand); // Carga los modelos basados en la marca seleccionada
-        applyFilters(); // Aplica los filtros después de seleccionar la marca
         // Llama a la API para obtener los modelos de la marca seleccionada
         if (selectedBrand) {
             try {
-                const response = await axios.get(`${config.apiBaseUrl}/modelos`, {
-                    params: { marca: selectedBrand }
-                });
-                setModelosDisponibles(response.data); // Actualizar la lista de modelos disponibles
+                const response = fetchWithFallback(`/productos/modelos`, { params: { marca: selectedBrand } });
+                const modelos = response.data || [];
+                setModelosDisponibles(modelos);
             } catch (error) {
                 console.error("Error al obtener modelos:", error);
                 setModelosDisponibles([]); // Limpiar modelos en caso de error
@@ -156,7 +226,6 @@ function SearchResults() {
     
         applyFilters(); // Aplicar filtros después de seleccionar la marca
     };
-    
     
     const handleModelChange = (event) => {
         setModelFilter(event.target.value);
@@ -178,14 +247,16 @@ function SearchResults() {
         applyFilters(); // Llama a applyFilters después de actualizar el filtro de categoría
     };
     
-    const handleSortChange = (event) => {
-        setSortOrder(event.target.value);
-        applyFilters(); // Llama a applyFilters después de actualizar el orden
-    };
+    const handleSortChange = (event) => setSortOrder(event.target.value);
+
     
     const fetchModelosPorMarca = async (marca) => {
         try {
-            const response = await axios.get(`${config.apiBaseUrl}/modelos`, { params: { marca } });
+            if (!marca) {
+                setModelosDisponibles([]);
+                return;
+            }
+            const response = await fetchWithFallback(`/productos/modelos`, { params: { marca } });
             
             // Filtra los modelos únicos
             const modelosUnicos = [...new Set(response.data.map((producto) => producto.modelo))];
@@ -204,13 +275,20 @@ function SearchResults() {
             alert("Selecciona al menos 2 productos para comparar.");
         }
     };
-    const paginatedProducts = productos.slice((page - 1) * productsPerPage, page * productsPerPage);
+
+    //Funcion para paginado
+    console.log('Productos:   ',productos)
+    const paginatedProducts = Array.isArray(productos)
+    ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
+    : [];
+
+
+
 
     const handleCompareToggle = () => {
         setCompareMode(!compareMode);
         setSelectedProducts([]);
     };
-    const [errorMessage, setErrorMessage] = useState(null);
 
     const handleSelectProduct = (producto) => {
         if (selectedProducts.includes(producto)) {
@@ -226,7 +304,7 @@ function SearchResults() {
         setErrorMessage(null); // Reiniciar el mensaje de error antes de aplicar filtros
 
         const params = {
-            nombre: searchTerm,
+            nombre: searchTerm|| undefined,
             marca: brandFilter || undefined,
             modelo: modelFilter || undefined,
             categoria: categoryFilter || undefined,
@@ -234,19 +312,118 @@ function SearchResults() {
             tienda: storeFilter || undefined,
             sortOrder: sortOrder || undefined,
         };
+
+        // Verifica si hay parámetros válidos
+        if (!params.nombre && !params.marca && !params.modelo && !params.categoria) {
+            console.log("Filtros inválidos o vacíos.");
+            setProductos([]);
+            setErrorMessage("No se encontraron productos.");
+            return;
+        }
     
         console.log("Aplicando filtros:", params); // Verifica los filtros en la consola
-        fetchProducts(params); // Envía los filtros a fetchProducts    };
+
+        if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
+            fetchProducts(params); // Envía los filtros a fetchProducts
+        } else {
+            console.log("No se ejecuta fetchProducts porque no hay parámetros relevantes.");
+        }
+
     };
     const handleCloseModal = () => {
         setOpenModal(false);
     };
 
+    
     return (
-        <Container maxWidth="lg" sx={{ mt: 4 }}>
-            <Typography variant="h4" sx={{ mb: 4, color: '#003366', fontWeight: 'bold' }}>
-                Results for "{searchTerm}"
-            </Typography>
+        <Container maxWidth="lg" sx={{ mt: 1 }}>
+                    {/* Sección de fondo y filtros */}
+                    <Box
+                        sx={{
+                            width: '100vw',
+                            height: { xs: '50vh', md: '20vh' },
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            position: 'relative',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textAlign: 'center',
+                            color: 'white',
+                            mb: 6,// Aquí defines el margen inferior
+                            p: 2,
+                            zIndex: 2,
+                        }}
+                    >
+                        {/* Imagen de fondo desenfocada */}
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundImage: 'url(https://guiaautomotrizcr.com/wp-content/uploads/2023/04/porqu.jpeg)', // Tu imagen de fondo
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat',
+                                filter: 'blur(2px)', // Ajusta el nivel de desenfoque según prefieras
+                                zIndex: 1,
+                            }}
+                        />
+
+                        {/* Overlay oscuro para mejorar la visibilidad del texto */}
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundColor: 'rgba(0, 0, 0, 0.4)', // Opacidad ajustable
+                                zIndex: 1,
+                            }}
+                        />
+                        <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 0, position: 'relative', zIndex: 2,fontSize: { xs: '1.8rem', md: '3rem' }}}>
+                            Resultados de "{searchTerm}"
+                        </Typography>
+                    </Box>
+
+                    {/* Breadcrumbs dinámico para la navegación */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mt: 3 }}>
+                    <Breadcrumbs aria-label="breadcrumb">
+                        <Link color="inherit" href="/" onClick={(e) => {
+                            e.preventDefault();
+                            navigate('/');
+                        }}>
+                            Inicio
+                        </Link>        
+                        {location.pathname.includes('/marca/') 
+                            ? <Typography color="text.primary">Marca - {categoryName}</Typography>
+                            : <Typography color="text.primary">Categoría - {categoryName}</Typography>}
+
+                    </Breadcrumbs>
+                    <FormControl variant="outlined"
+                        sx={{
+                            mt: 0, // Añade más margen superior
+                            minWidth: 160, // Opcional para controlar el ancho
+                        }}
+                    >
+                        <InputLabel>Ordenar por</InputLabel>
+                            <Select value={sortOrder} onChange={handleSortChange} label="Ordenar por">
+                                <MenuItem value="priceAsc">Precio: Menor a Mayor</MenuItem>
+                                <MenuItem value="priceDesc">Precio: Mayor a Menor</MenuItem>
+                                <MenuItem value="nameAsc">Nombre: A-Z</MenuItem>
+                                <MenuItem value="nameDesc">Nombre: Z-A</MenuItem>
+                            </Select>
+                    </FormControl>
+
+
+                    </Box>
 
 
 
@@ -271,34 +448,43 @@ function SearchResults() {
                         {/* Filtro por Marca */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
                             <InputLabel>Marca</InputLabel>
-                            <Select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)} label="Marca">
-                            <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
-                            {marcas && marcas.length > 0 && marcas.map((marca, index) => (
-                                <MenuItem key={index} value={marca}>{marca}</MenuItem>
-                            ))}                                
-                                <MenuItem value="Toyota">Toyota</MenuItem>
-                                <MenuItem value="jeep">Jeep</MenuItem>
-                                <MenuItem value="Chevrolet">Chevrolet</MenuItem>
-                                <MenuItem value="Honda">Honda</MenuItem>
-                                <MenuItem value="Ford">Ford</MenuItem>
-                                <MenuItem value="Nissan">Nissan</MenuItem>
-                                <MenuItem value="Volkswagen">Volkswagen</MenuItem>
-                                <MenuItem value="Hyundai">Hyundai</MenuItem>
-                                <MenuItem value="BMW">BMW</MenuItem>
-                                <MenuItem value="Audi">Audi</MenuItem>
-                                {/* Agrega más marcas aquí */}
-
-                            </Select>
+                                <Select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)} label="Marca">
+                                    <MenuItem value="">Ninguno</MenuItem>
+                                    {marcas && marcas.length > 0 ? (
+                                        marcas.map((marca, index) => (
+                                            <MenuItem key={index} value={marca}>
+                                                {marca}
+                                            </MenuItem>
+                                        ))
+                                    ) : (
+                                        <MenuItem disabled>Cargando marcas...</MenuItem>
+                                    )}
+                                </Select>
                         </FormControl>
+
 
                         {/* Filtro por Modelo */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
                             <InputLabel>Modelo</InputLabel>
-                            <Select value={modelFilter} onChange={(event) => setModelFilter(event.target.value)} label="Modelo">
-                            <MenuItem value="">Ninguno</MenuItem> {/* Opción para limpiar el filtro */}
-                            {modelosDisponibles.map((modelo, index) => (
-                                <MenuItem key={index} value={modelo}>{modelo}</MenuItem>
-                            ))}
+                            <Select
+                                value={modelFilter || ""}
+                                onChange={(event) => {
+                                    setModelFilter(event.target.value);
+                                    applyFilters();
+                                }}
+                                disabled={!brandFilter} // Deshabilita si no hay marca seleccionada
+                                label="Modelo"
+                            >
+                                <MenuItem value="">Ninguno</MenuItem>
+                                {modelosDisponibles.length > 0 ? (
+                                    modelosDisponibles.map((modelo, index) => (
+                                        <MenuItem key={index} value={modelo}>
+                                            {modelo}
+                                        </MenuItem>
+                                    ))
+                                ) : (
+                                    <MenuItem disabled>No hay modelos disponibles</MenuItem>
+                                )}
                             </Select>
                         </FormControl>
 
@@ -329,27 +515,29 @@ function SearchResults() {
                         {/* Filtro por Categoría */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
                             <InputLabel>Categoría</InputLabel>
-                            <Select value={categoryFilter} onChange={handleCategoryChange} label="Categoría">
-                            <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
-                                <MenuItem value="Frenos">Frenos</MenuItem>
-                                <MenuItem value="Motor">Motor</MenuItem>
-                                <MenuItem value="Eléctrico">Eléctrico</MenuItem>
-                                <MenuItem value="Suspensión">Suspensión</MenuItem>
-                                <MenuItem value="Transmisión">Transmisión</MenuItem>
-                                <MenuItem value="Carrocería">Carrocería</MenuItem>
-                                <MenuItem value="Refrigeración">Refrigeración</MenuItem>
-                                <MenuItem value="Escape">Escape</MenuItem>
-
-
+                            <Select
+                                value={categoryFilter}
+                                onChange={handleCategoryChange}
+                                label="Categoría"
+                            >
+                                {CATEGORIES.map((category, index) => (
+                                    <MenuItem key={index} value={category.value}>
+                                        {category.label}
+                                    </MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
+
                         {/* Botón de comparar o mostrar comparación */}
                         {compareMode ? (
                             <Button
                                 variant="contained"
                                 color="secondary"
                                 fullWidth
-                                sx={{ mt: 2 }}
+                                sx={{ mt: 2,
+                                    backgroundColor: '#FFCC00', // Color naranja para resaltar
+                                    color: 'black',
+                                 }}
                                 onClick={handleShowComparison}
                                 disabled={selectedProducts.length < 2} // Habilita el botón si hay al menos 2 productos seleccionados
                             >
@@ -360,7 +548,11 @@ function SearchResults() {
                                 variant="contained"
                                 color="primary"
                                 fullWidth
-                                sx={{ mt: 2 }}
+                                sx={{ 
+                                    mt: 2,
+                                    backgroundColor: '#FFCC00', // Color naranja para resaltar
+                                    color: 'black',
+                                 }}
                                 onClick={handleCompareToggle}
                             >
                                 Comparar productos
@@ -383,8 +575,30 @@ function SearchResults() {
 
                 {/* Columna de productos y ordenación */}
                 <Grid item xs={12} md={9}>      
-                    {errorMessage ? (
-                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                {isLoading ? (
+                        <Box
+                        sx={{
+                            mt: 4,
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '50vh', // Ajusta la altura para centrar verticalmente
+                        }}
+                        >
+                        <Typography variant="h6">Cargando productos...</Typography>
+                        </Box>
+                            ) : errorMessage ? (
+                                <Box
+                                sx={{
+                                    mt: 4,
+                                    textAlign: 'center',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '50vh', // Centra verticalmente dentro de un contenedor
+                                }}
+                            >
                             <Typography variant="h6" color="error">
                                 {errorMessage}
                             </Typography>
@@ -408,8 +622,11 @@ function SearchResults() {
                                             flexDirection: 'column',
                                             justifyContent: 'space-between',
                                             cursor: 'pointer',
+                                            mt: 0, // Añade un margen superior
+
                                             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                                             '&:hover': { transform: 'scale(1.05)' }
+                                            
                                         }}
                                         onClick={() => !compareMode && navigate(`/product/${producto._id}`)}
                                     >
@@ -421,7 +638,7 @@ function SearchResults() {
                                                 inputProps={{ 'aria-label': 'select to compare' }}
                                                 sx={{
                                                     position: 'absolute',
-                                                    top: 8,
+                                                    top: 5,
                                                     right: 8,
                                                     bgcolor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco semitransparente
                                                     borderRadius: '50%', // Checkbox circular
@@ -438,20 +655,25 @@ function SearchResults() {
                                             width="200"
                                             image={producto.imagenUrl || 'https://via.placeholder.com/200'}
                                             alt={producto.nombre}
-                                            sx={{ objectFit: 'cover' }}
+                                            sx={{
+                                                objectFit: 'contain', // Ajusta la imagen para que quepa dentro del contenedor sin recortarla
+                                                height: '150px', // Altura específica
+                                                width: '150px', // Anchura específica
+                                                margin: 'auto', // Centra la imagen en su contenedor
+                                                padding: '10px', // Espaciado interno
+                                            }}
                                         />
                                         <CardContent>
                                             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                                                 {producto.nombre}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {producto.descripcion}
-                                            </Typography>
+
                                             <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
-                                                ${producto.precio_actual}
+                                            {`$${producto.precio_actual.toLocaleString("es-CL")}`}
                                             </Typography>
-                                            <Typography variant="body2">{producto.marca}</Typography>
+                                            <Typography variant="body2">Marca: {producto.marca}</Typography>
                                             <Typography variant="body2">Categoria: {producto.categoria}</Typography>
+                                            <Typography variant="body2">Tienda: {producto.empresa_procedencia}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
