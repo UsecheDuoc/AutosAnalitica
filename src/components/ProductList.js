@@ -39,9 +39,9 @@
         { nombre: 'Toyota', imageUrl: 'https://www.diariomotor.com/imagenes/2022/11/logo-de-toyota-6376f7ae393e5-1280x720.webp' },
         { nombre: 'Chery', imageUrl: 'https://i.pinimg.com/736x/d4/e6/de/d4e6de24c4d2cc3344766e23330d588a.jpg' },
         { nombre: 'Chevrolet', imageUrl: 'https://www.shutterstock.com/image-vector/chattogram-bangladesh-may-29-2023-600nw-2309781029.jpg' },
-        { nombre: 'Honda', imageUrl: 'https://thumbs.dreamstime.com/b/logotipo-del-vecto…-imprimir-viajes-y-autom%C3%B3viles-183281772.jpg' },
-        { nombre: 'Ford', imageUrl: 'https://cdnx.jumpseller.com/enchulauto/image/16953037/resize/540/540?1622849421' },
-        { nombre: 'Nissan', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0jCShBkrWc2yvl9C7yNVm7v8_DHdrv6HGow&s' },
+        { nombre: 'Changan', imageUrl: 'https://1000marcas.net/wp-content/uploads/2021/02/Changan-Logo-2016.png' },
+        { nombre: 'Maxus', imageUrl: 'https://www.msrepuestos.cl/cdn/shop/collections/MAXUS.png?v=1719593851&width=1296' },
+        { nombre: 'Foton', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyo0MGZ0AAKTm9_9ux1S1u1D7f-DgrTRvlIA&s' },
         { nombre: 'Volkswagen', imageUrl: 'https://cdn.autobild.es/sites/navi.axelspringer.es/public/media/image/2019/04/logotipo-volkswagen-historia_21.jpg?tf=3840x' },
         { nombre: 'Hyundai', imageUrl: 'https://logodownload.org/wp-content/uploads/2014/05/hyundai-logo-3.png' },
         { nombre: 'BMW', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/1200px-BMW.svg.png' },
@@ -81,14 +81,12 @@
             fetchProductos();
         }, []);
 
-        useEffect(() => {
-            console.log("Modelos disponibles en ProductList:", modelosDisponibles);
-        }, [modelosDisponibles]);
+
 
         useEffect(() => {
             if (selectedFilters.marca) {
                 console.log("Marca seleccionada:", selectedFilters.marca);
-                fetchModelosPorMarca(selectedFilters.marca);
+                //fetchModelosPorMarca(selectedFilters.marca);
             } else {
                 setModelosDisponibles([]);
             }
@@ -272,15 +270,12 @@
 
         const fetchModelosPorMarca = async (marca) => {
             try {
-                const response = await fetchWithFallback(`/productos/modelos`, { params: { marca } });
-                const data = response.data || [];
+                const response = await fetchWithFallback(`/productos/modelos?marca=${encodeURIComponent(marca)}`);
+                const data = response;
                 console.log("Modelos recibidos:", data);
 
-                // Filtrar modelos únicos
-                const modelosUnicos = [...new Set(response.map((producto) => producto.modelo))];
-
-                setModelosDisponibles(modelosUnicos); // Actualiza el estado con los modelos únicos
-                console.log("Modelos disponibles para la marca:", modelosUnicos);
+                setModelosDisponibles(response); // Actualiza el estado con los modelos únicos
+                console.log("Modelos disponibles para la marca:", response);
 
 
 
@@ -711,7 +706,7 @@
                     <Box  id="categorias" 
                     sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 3, mb: 4 }}>
                         <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#333' }}>
-                            Productos por Categorias
+                            Principales Categorias
                         </Typography>
                         <Slider 
                         {...carouselSettings}>
@@ -786,7 +781,7 @@
                     {/* Sección de Marcas */}
                     <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p: 3, mb: 4 }}>
                         <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: '#333' }}>
-                            Productos por Marcas
+                         Principales Marcas
                         </Typography>
                         <Slider {...carouselSettings}>
                             {InicioMarcas.map((marca, index) => (
@@ -970,7 +965,8 @@
                     sx={{ bgcolor: '#f0f0f0',
                         borderRadius: 2,
                         p:1 ,
-                        mb: 5 }}
+                        mb: 5,
+                     }}
                     >
                         <div className="mt-8 px-4 relative">
                         <h2 className="text-2xl font-bold mb-4">
@@ -987,19 +983,39 @@
                                     <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                         {/* Enlace al ProductDetails.js con el ID */}
                                         <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
-                                            <img
-                                                src={producto.imagenUrl || "https://via.placeholder.com/300"}
-                                                alt={producto.nombre}
-                                                className="h-44 w-full object-cover"
-                                            />
+                                        <CardMedia
+                                            component="img"
+                                            image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                            alt={producto.nombre}
+                                            sx={{
+                                                width: '100%', // Ajusta al ancho del contenedor
+                                                height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
+                                                objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
+                                                borderRadius: '8px', // Opcional: redondea los bordes
+                                                backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
+                                                padding: '10px', // Opcional: espacio interno
+                                            }}
+                                        />
                                             <div className="p-4">
                                                 <h3 className="font-semibold text-lg">{producto.nombre}</h3>
                                                 <p className="text-green-500 font-bold mt-2">
                                                     ${producto.precio_actual.toLocaleString("es-CL")}
                                                 </p>
-                                                <p className="text-red-500 text-sm">
-                                                    Descuento: {producto.descuento_relativo}%{/* Añade el descuento */}
-                                                </p>
+
+                                                {/*Descuento*/}
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
+                                                        fontWeight: 'bold', // Negrita para resaltar
+                                                        textAlign: 'center', // Centrado del texto
+                                                    }}
+                                                >
+                                                    {producto.descuentoRelativo
+                                                        ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
+                                                        : 'Sin descuento'}
+                                                </Typography>
+
                                             </div>
                                         </div>
                                     </Link>

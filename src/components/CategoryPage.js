@@ -518,6 +518,18 @@ function CategoryPage() {
         const logo = tiendaLogos.find((tienda) => tienda.alt.toLowerCase() === storeName.toLowerCase());
         return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
     };
+
+
+    
+    /*if (isLoading) {
+        return <Typography variant="h6" align="center">Cargando producto...</Typography>;
+    }
+
+    if (errorMessage) {
+        return <Typography variant="h6" align="center" color="error">{errorMessage}</Typography>;
+    }*/
+
+
     return (
             <Container maxWidth="lg" sx={{ mt: 1 }}>
                             {/* Sección de fondo y filtros */}

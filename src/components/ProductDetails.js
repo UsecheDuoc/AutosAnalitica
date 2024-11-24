@@ -39,6 +39,7 @@ function Arrow(props) {
 
 
 
+
 function ProductDetails() {
     const { id } = useParams();
     const [producto, setProducto] = useState(null);
@@ -50,17 +51,35 @@ function ProductDetails() {
     const [product, setProduct] = useState(null);
     const [productos, setProductos] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [productosDestacados, setProductosDestacados] = useState([]);
+
+    //Productos destacados
+    useEffect(() => {
+        fetchProductosDestacados();
+    }, []);
+    const fetchProductosDestacados = async () => {
+        try {
+            const response = await fetchWithFallback(`/productos/destacados-descuento`);
+            console.log('Productos destacados que trae la apo:',response)
+            setProductosDestacados(response);
+
+        } catch (error) {
+            console.error("Error al obtener productos destacados:", error.message);
+            setErrorMessage("No se pudieron cargar los productos destacados.");
+        }
+    };
+
 
 
     // Función para manejar la selección de un producto relacionado
-const handleRelatedProductClick = (relatedProductId) => {
-    navigate(`${relatedProductId}`);
-    console.log('Lo que tomo de la url para id: ', relatedProductId)
-};
+    const handleRelatedProductClick = (relatedProductId) => {
+        navigate(`${relatedProductId}`);
+        console.log('Lo que tomo de la url para id: ', relatedProductId)
+    };
 
     useEffect(() => {
         const fetchData = async () => {
-            const productRequest = await fetchWithFallback(`/productos?id=${encodeURIComponent(id)}`);
+            const productRequest = await fetchWithFallback(`/productos/${encodeURIComponent(id)}`);
             const similarProductsRequest = fetchWithFallback(`/productos/buscar-similares?id=${id}`);
             const relatedProductsRequest = fetchWithFallback(`/productos/relacionados/${id}`);
     
@@ -73,8 +92,8 @@ const handleRelatedProductClick = (relatedProductId) => {
             // Manejo de resultados de cada solicitud
             results.forEach((result, index) => {
                 if (result.status === "fulfilled") {
-                    const data = result.value?.data || []; // Asegúrate de que siempre sea un array
-
+                    const data = result; // Asegúrate de que siempre sea un array
+                    console.log('Lo que me trae el primer fetch',data)
                     switch (index) {
                         case 0: // Detalles del producto
                             console.log("Producto obtenido:", result.value);
@@ -82,12 +101,12 @@ const handleRelatedProductClick = (relatedProductId) => {
                             setErrorMessage(null);
                             break;
                         case 1: // Productos similares
-                            console.log("Productos similares:", result.value.data);
-                            setSimilarProducts(Array.isArray(result.value?.data) ? result.value.data.slice(0, 3) : []); // Verificar que sea un array
+                            console.log("Productos similares:", result);
+                            setSimilarProducts(Array.isArray(result.value) ? result.value.slice(0, 3) : []); // Verificar que sea un array
                             break;
                         case 2: // Productos relacionados
-                            console.log("Productos relacionados:", result.value.data);
-                            setRelatedProducts(Array.isArray(result.value?.data) ? result.value.data : []); // Verificar que sea un array
+                            console.log("Productos relacionados:", result);
+                            setRelatedProducts(Array.isArray(result.value) ? result.value : []); // Verificar que sea un array
                             break;
                         default:
                             break;
@@ -119,7 +138,7 @@ const handleRelatedProductClick = (relatedProductId) => {
     {/* Productos Relacionados */}
     // Llamada para obtener los detalles del producto basado en el ID
     useEffect(() => {
-        fetchProductDetails();
+        fetchProductDetails(id);
 
         // Al cambiar el producto, desplazarse al inicio de la página
         window.scrollTo(0, 0);
@@ -139,9 +158,8 @@ const handleRelatedProductClick = (relatedProductId) => {
     useEffect(() => {
         const fetchRelated = async () => {
             try {
-                const response = await fetchWithFallback(`/productos/relacionados/${id}`
-                );
-                const data = await response.json();
+                const response = await fetchWithFallback(`/productos/relacionados/${id}`);
+                const data = await response;
                 console.log("Productos relacionados (API con fallback):", data);
                 setRelatedProducts(data);
             } catch (error) {
@@ -170,7 +188,7 @@ const handleRelatedProductClick = (relatedProductId) => {
         // Ejemplo:
         try {
             const response = await fetchWithFallback(`/productos/${id}`);
-            const data = await response.json();
+            const data = await response;
             setProduct(data);
             // Suponiendo que el producto tiene un campo 'relatedProducts'
             setRelatedProducts(data.relatedProducts || []);
@@ -203,20 +221,22 @@ const handleRelatedProductClick = (relatedProductId) => {
             },
         ],
     };
+
     // Definir las variables para el cálculo de descuento o aumento
     // Calcular el último precio en el historial de precios y el cambio porcentual
     const lastPrice = producto.historial_precios?.length
     ? producto.historial_precios
           .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-          .at(-1)?.precio
+          .at(-2)?.precio//Prnultimo precio del array historial
     : null;
 
-
+    //formula para calcular el porcentaje de cambio respoecto al penultimo precio
     const priceDifference = lastPrice !== null ? producto.precio_actual - lastPrice : 0;
     const percentageChange =
-        lastPrice !== null
-            ? Math.abs(priceDifference / lastPrice) * 100
-            : 0;
+    lastPrice !== null
+        ? Math.round(Math.abs(priceDifference / lastPrice) * 100)
+        : 0;
+
     
         // Mostrar por consola los valores
     console.log("Precio actual:", producto.precio_actual);
@@ -338,9 +358,17 @@ const handleRelatedProductClick = (relatedProductId) => {
         ],
     };
 
+        if (isLoading) {
+        return <Typography variant="h6" align="center">Cargando producto...</Typography>;
+    }
+
+    if (errorMessage) {
+        return <Typography variant="h6" align="center" color="error">{errorMessage}</Typography>;
+    }
+
 
     return (
-        <Container maxWidth="md" sx={{ width: '100%', p: { xs: 1, sm: 2 } }}    >
+        <Container     >
 
             
             {/* Detalles del producto */}
@@ -392,10 +420,168 @@ const handleRelatedProductClick = (relatedProductId) => {
                     <Typography variant="h6">Características del producto</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary">
-                        {/* Aquí puedes agregar el texto de características */}
-                        Este es un producto de alta calidad, ideal para uso en el hogar y la oficina.
-                    </Typography>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                            gap: 2,
+                            p: 2,
+                            bgcolor: '#f9f9f9',
+                            borderRadius: 2,
+                            boxShadow: 1,
+                        }}
+                    >
+                        {/* Recuadros de características */}
+                        {producto && (
+                            <>
+                                {/*Marca*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Marca:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.marca !== "null" && producto.marca !== undefined ? producto.marca : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Modelo:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Modelo:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.modelo !== "null" && producto.modelo !== undefined ? producto.modelo : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Categoría:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Categoría:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.categoria !== "null" && producto.categoria !== undefined ? producto.categoria : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Color:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Color:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                    {producto.color !== "null" && producto.color !== undefined ? producto.color : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Caracteristica:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Característica:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.caracteristica !== "null" && producto.caracteristica !== undefined ? producto.caracteristica : 'No especificado'}
+
+                                    </Typography>
+                                </Box>
+
+                                {/*Numero de pieza:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Numero de pieza:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.numero_pieza !== "null" && producto.numero_pieza !== undefined ? producto.numero_pieza : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Tipo de vehiculo:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Tipo de vehiculo:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.tipo_vehiculo !== "null" && producto.tipo_vehiculo !== undefined ? producto.tipo_vehiculo : 'No especificado'}
+                                    </Typography>
+                                </Box>
+
+                                {/*Material:*/}
+                                <Box
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'white',
+                                        borderRadius: 2,
+                                        boxShadow: 1,
+                                    }}
+                                >
+
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Material:
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {producto.material !== "null" && producto.material !== undefined ? producto.material : 'No especificado'}
+                                    </Typography>
+                                </Box>
+                            </>
+                        )}
+                    </Box>
+
+
+
+
                 </AccordionDetails>
             </Accordion>
 
@@ -418,136 +604,188 @@ const handleRelatedProductClick = (relatedProductId) => {
             </Paper>
 
             {/* Comparación con productos similares */}
-            <Paper elevation={4} sx={{ p: 2, mt: 4,mb: 5, borderRadius: 6, width: '100%' }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                    Compara con otros productos similares
-                </Typography>
+{/* Comparación con productos similares */}
+<Paper elevation={4} sx={{ p: 2, mt: 4, mb: 5, borderRadius: 6, width: '100%' }}>
+  <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3, textAlign: 'center' }}>
+    Compara con otros productos similares
+  </Typography>
 
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 2,
-                    width: '100%',
-                    overflowX: { xs: 'auto', sm: 'unset' }, // Scroll en pantallas pequeñas
-                    justifyContent: { sm: 'center' }
-                }}>                    
-                    {[producto, ...similarProducts].map((prod, index) => (
-                        <Card key={index} sx={{ width: { xs: '100%', sm: '200px' }, boxShadow: 3, textAlign: 'center' , flexShrink: 0 }}>
-                            <CardMedia
-                                component="img"
-                                image={prod.imagenUrl || placeholderImage} // Cambia 'related' a 'prod'
-                                alt={prod.nombre} // Cambia 'related' a 'prod'
-                                sx={{
-                                    width: '100%',
-                                    height: { xs: 120, sm: 160 },
-                                    objectFit: 'contain',
-                                    borderRadius: 1,
-                                    mb: 1,
-                                }}
-                            />  
-                            <CardContent>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{prod.nombre}</Typography>
-                                {index === 0 ? (
-                                    <Typography variant="body2" color="textSecondary">(Producto actual)</Typography>
-                                ) : (
-                                    <Button variant="text" color="primary" href={`/product/${prod._id}`}>
-                                        Ver producto
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
-                </Box>
+  <Box sx={{ display: 'flex', overflowX: 'auto', p: 1, gap: 2 }}>
+    {/* Contenedor de títulos fijos */}
+    <Box
+      sx={{
+        minWidth: '120px',
+        flexShrink: 0,
+        textAlign: 'right',
+        mr: 2,
+        fontWeight: 'bold',
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'white',
+        zIndex: 2,
+        borderRight: '1px solid #ddd',
+        p: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center', // Alinear verticalmente
+        height: '100%',
+      }}
+    >
+      <Typography variant="body2" sx={{ mb: 2 }}>Opiniones</Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>Precio</Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>Marca</Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>Modelo</Typography>
+      <Typography variant="body2" sx={{ mb: 2 }}>Color</Typography>
+    </Box>
 
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell></TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index} sx={{ fontWeight: 'bold' }}>
-                                        {prod.nombre}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Opiniones</TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index}>{prod.opiniones || "-"}</TableCell>
-                                ))}
-                            </TableRow>
-                            <TableRow>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Precio</TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index}>
-                                        {prod.precio_actual ? `$${prod.precio_actual.toLocaleString('es-CL')}` : "-"}
-                                    </TableCell>
-                                ))} 
-                            </TableRow>
-                            <TableRow>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Marca</TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index}>{prod.marca || "-"}</TableCell>
-                                ))}
-                            </TableRow>
-                            <TableRow>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Modelo</TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index}>{prod.modelo || "-"}</TableCell>
-                                ))}
-                            </TableRow>
-                            <TableRow>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>Color</TableCell>
-                                {[producto, ...similarProducts].map((prod, index) => (
-                                    <TableCell align="center" key={index}>{prod.color || "-"}</TableCell>
-                                ))}
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+    {/* Carrusel de productos */}
+    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
+      {[producto, ...similarProducts].map((prod, index) => (
+        <Box
+          key={index}
+          sx={{
+            minWidth: { xs: '200px', sm: '220px' }, // Ajustar ancho
+            border: '1px solid #ddd',
+            borderRadius: 3,
+            boxShadow: 2,
+            backgroundColor: 'white',
+            flexShrink: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Imagen del producto */}
+          <Box
+            sx={{
+              width: '100%',
+              height: { xs: '120px', sm: '140px' },
+              backgroundImage: `url(${prod.imagenUrl || placeholderImage})`,
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              borderBottom: '1px solid #ddd',
+            }}
+          />
+
+          {/* Información del producto */}
+          <Box sx={{ p: 1, textAlign: 'center' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 'bold', mb: 1, fontSize: '0.85rem' }}
+            >
+              {prod.nombre}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: index === 0 ? 'textSecondary' : 'primary', mb: 1 }}
+            >
+              {index === 0 ? '(Producto actual)' : 'Ver producto'}
+            </Typography>
+
+            <Box sx={{ textAlign: 'left', mt: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Opiniones:</strong> {prod.opiniones || '-'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Precio:</strong>{' '}
+                {prod.precio_actual
+                  ? `$${prod.precio_actual.toLocaleString('es-CL')}`
+                  : '-'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Marca:</strong> {prod.marca || '-'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Modelo:</strong> {prod.modelo || '-'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Color:</strong> {prod.color || '-'}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  </Box>
+</Paper>
+
+
+
             
 
-             {/* Productos Destacados */}
-             <Box sx={{ bgcolor: '#f0f0f0', borderRadius: 2, p:1 , mb: 5 }}>
-             <div className="mt-8 px-4 relative">
-             <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
-             {Array.isArray(relatedProducts) && relatedProducts.length > 0 ? (
-                <Slider
-                    {...settings}
-                    arrows={false}
-                    autoplay={true}
-                    autoplaySpeed={2000}
-                >
-                    {relatedProducts.map((related, index) => (
-                        <div key={index} className="px-2">
-                            <Link to={`/productos/${related._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
-                                    <img
-                                        src={related.imagenUrl || "https://via.placeholder.com/300"}
-                                        alt={related.nombre || "Sin nombre"}
-                                        className="h-44 w-full object-cover"
-                                    />
-                                    <div className="p-4">
-                                        <h3 className="font-semibold text-lg">{related.nombre || "Sin nombre"}</h3>
-                                        <p className="text-green-500 font-bold mt-2">
-                                            ${related.precio_actual?.toLocaleString("es-CL") || "Precio no disponible"}
-                                        </p>
-                                    </div>
+
+
+
+
+
+            
+                    {/* Productos Destacados */}
+                    <Box 
+                    sx={{ bgcolor: '#f0f0f0',
+                        borderRadius: 2,
+                        p:1 ,
+                        mb: 5,
+                     }}
+                    >
+                        <div className="mt-8 px-4 relative">
+                        <h2 className="text-2xl font-bold mb-4">
+                            Productos Destacados
+                        </h2>
+                        <Slider
+                            {...settings}
+                            arrows={false} // Eliminamos las flechas
+                            autoplay={true} // Activamos el desplazamiento automático
+                            autoplaySpeed={2000} // Intervalo de 2 segundos
+                        >
+                            {productosDestacados.map((producto, index) => (
+                                <div key={index} className="px-2">
+                                    <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                        {/* Enlace al ProductDetails.js con el ID */}
+                                        <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
+                                        <CardMedia
+                                            component="img"
+                                            image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                            alt={producto.nombre}
+                                            sx={{
+                                                width: '100%', // Ajusta al ancho del contenedor
+                                                height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
+                                                objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
+                                                borderRadius: '8px', // Opcional: redondea los bordes
+                                                backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
+                                                padding: '10px', // Opcional: espacio interno
+                                            }}
+                                        />
+                                            <div className="p-4">
+                                                <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                                                <p className="text-green-500 font-bold mt-2">
+                                                    ${producto.precio_actual.toLocaleString("es-CL")}
+                                                </p>
+
+                                                {/*Descuento*/}
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
+                                                        fontWeight: 'bold', // Negrita para resaltar
+                                                        textAlign: 'center', // Centrado del texto
+                                                    }}
+                                                >
+                                                    {producto.descuentoRelativo
+                                                        ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
+                                                        : 'Sin descuento'}
+                                                </Typography>
+
+                                            </div>
+                                        </div>
+                                    </Link>
                                 </div>
-                            </Link>
+                            ))}
+                        </Slider>
                         </div>
-                    ))}
-                </Slider>
-            ) : (
-                <Typography variant="body2" color="textSecondary" align="center">
-                    No hay productos destacados disponibles.
-                </Typography>
-            )}
-             </div>
-         </Box>
+                    </Box>
+
+
+
+
         </Container>
     );
 }

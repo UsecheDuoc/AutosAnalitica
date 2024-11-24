@@ -113,6 +113,8 @@ function SearchResults() {
     //EFECTO QUE LLAMA A LA API CON LOS FILTROS QUE VIENEN DEL HOME O LA BUSQUEDA DE LA BARRA
     //NO MODIFICAR A MENOS QUE SEPA QUE HACE
     const fetchProducts = async (params) => {
+        //setIsLoading(true); // Inicia el estado de carga
+
         if (!params.marca && !params.modelo && !params.categoria && !params.nombre) {
             console.log("No hay parámetros válidos para ejecutar fetchProducts.");
             setErrorMessage("Filtros vacíos. Por favor, ajusta tu búsqueda.");
@@ -165,6 +167,8 @@ function SearchResults() {
     };
     
     const fetchProductosPorMarca = async (nombreMarca) => {
+        //setIsLoading(true); // Inicia el estado de carga
+
         try {
             const response = await fetchWithFallback(`/productos/marca`, { params: { nombre: nombreMarca } });
             setProductos(response.data);
@@ -252,6 +256,8 @@ function SearchResults() {
 
     
     const fetchModelosPorMarca = async (marca) => {
+        setIsLoading(true); // Inicia el estado de carga
+
         try {
             if (!marca) {
                 setModelosDisponibles([]);
@@ -276,13 +282,6 @@ function SearchResults() {
             alert("Selecciona al menos 2 productos para comparar.");
         }
     };
-
-    //Funcion para paginado
-    console.log('Productos:   ',productos)
-    const paginatedProducts = Array.isArray(productos)
-    ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
-    : [];
-
 
 
 
@@ -348,7 +347,18 @@ function SearchResults() {
         const logo = tiendaLogos.find((tienda) => tienda.alt.toLowerCase() === storeName.toLowerCase());
         return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
     };
+
+    //Funcion para paginado
+    console.log('Productos:   ',productos)
+    const paginatedProducts = Array.isArray(productos)
+    ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
+    : [];
+
     
+
+
+
+
     return (
         <Container maxWidth="lg" sx={{ mt: 1 }}>
                     {/* Sección de fondo y filtros */}
@@ -621,7 +631,7 @@ function SearchResults() {
                     <>
                     {/* Listado de productos */}
                     <Grid container spacing={3}>
-                        {productos.length > 0 ? (
+                    {Array.isArray(productos) && productos.length > 0 ? (
                             paginatedProducts.map((producto) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
                                     <Card
@@ -727,12 +737,18 @@ function SearchResults() {
 
     
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    {Array.isArray(productos) && productos.length > 0 ? (
                         <Pagination
                             count={Math.ceil(productos.length / productsPerPage)}
                             page={page}
                             onChange={handlePageChange}
                             color="primary"
                         />
+                        ) : (
+                            <Typography variant="body2" color="textSecondary">
+                                No hay productos para mostrar.
+                            </Typography>
+                        )}
                     </Box>
                     </>
                      )}
