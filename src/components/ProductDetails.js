@@ -452,9 +452,10 @@ function ProductDetails() {
             <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Button
                 variant="contained"
-                color="primary"
                 onClick={() => handlePurchase(producto.LinkPagina)}
                 sx={{
+                    backgroundColor: '#FFCC00', // Color naranja para resaltar
+
                     px: 4,
                     py: 1,
                     fontSize: '1rem',
@@ -463,7 +464,7 @@ function ProductDetails() {
                     transition: 'all 0.3s ease',
                     boxShadow: 3,
                     '&:hover': {
-                      backgroundColor: 'darkblue',
+                        backgroundColor: '#e64a19',
                       transform: 'scale(1.05)',
                     },
                   }}

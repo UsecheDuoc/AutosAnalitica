@@ -71,46 +71,8 @@ function SearchResults() {
         setMarcas(initialMarcas);
     }, []);
 
-    // Leer parámetros de búsqueda desde la URL
-    /*useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        console.log('Recibi estos filtros desde productLists.js en CategoryPage.js',{searchParams})
 
-        const marca = searchParams.get("marca") || '';
-        const modelo = searchParams.get("modelo") || '';
-        const categoria = searchParams.get("categoria") || '';
-        const searchTerm = searchParams.get('q') || ''; // Para búsquedas por nombre
-
-        const descuento = searchParams.get("descuento") || '';
-        const tienda = searchParams.get("tienda") || '';
-        const sortOrder = searchParams.get("sortOrder") || '';
-
-
-        // Actualiza los filtros en el estado
-        setBrandFilter(marca);
-        setModelFilter(modelo);
-        setCategoryFilter(categoria);
-        setDiscountFilter(descuento);
-        setStoreFilter(tienda);
-        setSortOrder(sortOrder);
-
-        // Fetch inicial combinando filtros y búsqueda
-        const params = {
-        nombre: searchTerm || undefined,
-        marca: marca || undefined,
-        modelo: modelo || undefined,
-        categoria: categoria || undefined,
-        descuento: descuento || undefined,
-        tienda: tienda || undefined,
-    };
-    
-    //LLamo a la funcion para que busque con los parametros nuevos
-    fetchProducts(params);
-    applyFilters();
-
-    }, [location.search]);*/
-
-    //EFECTO QUE LLAMA A LA API CON LOS FILTROS QUE VIENEN DEL HOME O LA BUSQUEDA DE LA BARRA
+    //Funcion QUE LLAMA A LA API CON LOS FILTROS QUE VIENEN DEL HOME O LA BUSQUEDA DE LA BARRA
     //NO MODIFICAR A MENOS QUE SEPA QUE HACE
     const fetchProducts = async (params) => {
         //setIsLoading(true); // Inicia el estado de carga
@@ -219,7 +181,7 @@ function SearchResults() {
         if (selectedBrand) {
             try {
                 const response = fetchWithFallback(`/productos/modelos`, { params: { marca: selectedBrand } });
-                const modelos = response.data || [];
+                const modelos = response;
                 setModelosDisponibles(modelos);
             } catch (error) {
                 console.error("Error al obtener modelos:", error);
@@ -256,7 +218,7 @@ function SearchResults() {
 
     
     const fetchModelosPorMarca = async (marca) => {
-        setIsLoading(true); // Inicia el estado de carga
+        //setIsLoading(true); // Inicia el estado de carga
 
         try {
             if (!marca) {
@@ -325,6 +287,7 @@ function SearchResults() {
 
         if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
             fetchProducts(params); // Envía los filtros a fetchProducts
+            console.log('Esto lo podro colocar? ', params)
         } else {
             console.log("No se ejecuta fetchProducts porque no hay parámetros relevantes.");
         }
@@ -453,7 +416,7 @@ function SearchResults() {
 
             <Grid container spacing={3}>
                 
-                {/* Filtro en el lado izquierdo */}
+                {/* Filtros en el lado izquierdo */}
                 <Grid item xs={12} md={3}>
                     <Paper elevation={3} sx={{ p: 2, bgcolor: '#f9f9f9' }}>
                         {/* Encabezado de Filtros con enlace para limpiar */}
@@ -472,7 +435,12 @@ function SearchResults() {
                         {/* Filtro por Marca */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
                             <InputLabel>Marca</InputLabel>
-                                <Select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)} label="Marca">
+                                <Select 
+                                    value={brandFilter} 
+                                    onChange={(event) => 
+                                        setBrandFilter(event.target.value)} 
+                                        label="Marca"
+                                    >
                                     <MenuItem value="">Ninguno</MenuItem>
                                     {marcas && marcas.length > 0 ? (
                                         marcas.map((marca, index) => (
@@ -494,12 +462,11 @@ function SearchResults() {
                                 value={modelFilter || ""}
                                 onChange={(event) => {
                                     setModelFilter(event.target.value);
-                                    applyFilters();
                                 }}
                                 disabled={!brandFilter} // Deshabilita si no hay marca seleccionada
                                 label="Modelo"
+
                             >
-                                <MenuItem value="">Ninguno</MenuItem>
                                 {modelosDisponibles.length > 0 ? (
                                     modelosDisponibles.map((modelo, index) => (
                                         <MenuItem key={index} value={modelo}>
@@ -512,19 +479,6 @@ function SearchResults() {
                             </Select>
                         </FormControl>
 
-
-                        {/* Filtro por Descuento */}
-                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                            <InputLabel>Descuento</InputLabel>
-                            <Select value={discountFilter} onChange={handleDiscountChange} label="Descuento">
-                                <MenuItem value={10}>10% o más</MenuItem>
-                                <MenuItem value={20}>20% o más</MenuItem>
-                                <MenuItem value={30}>30% o más</MenuItem>
-                                {/* Agrega más niveles de descuento aquí */}
-                                <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
-
-                            </Select>
-                        </FormControl>
 
                         {/* Filtro por Tienda */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>

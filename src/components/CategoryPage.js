@@ -54,14 +54,7 @@ function CategoryPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     //NUEVO
-    const handleBrandChange = (event) => {
-        const selectedBrand = event.target.value;
-        setBrandFilter(selectedBrand);
-        setModelFilter(''); // Reiniciar el modelo cuando cambia la marca
-        fetchModelosPorMarca(selectedBrand); // Cargar modelos según la marca seleccionada
-        applyFilters(); // Aplicar filtros después de seleccionar la marca
-    };
-    
+   
     //Comentado para aplicar FilterSection
     const handleModelChange = (event) => {
         setModelFilter(event.target.value);
@@ -168,13 +161,10 @@ function CategoryPage() {
         const modelo = queryParams.get('modelo') || '';
         const categoria = queryParams.get('categoria') || '';
         const searchParams = new URLSearchParams();
-        if (selectedFilters.marca) searchParams.set('marca', selectedFilters.marca);
-        if (selectedFilters.modelo) searchParams.set('modelo', selectedFilters.modelo);
-        if (selectedFilters.categoria) searchParams.set('categoria', selectedFilters.categoria);
-        
-        setBrandFilter(marca);
-        setModelFilter(modelo);
-        setCategoryFilter(categoria);
+
+        setBrandFilter(marca || "");
+        setModelFilter(modelo || "");
+        setCategoryFilter(categoria || "");
     
         if (marca || modelo || categoria) {
             applyFilters(); // Solo aplica si hay filtros válidos
@@ -411,6 +401,7 @@ function CategoryPage() {
         }
     
         console.log("Aplicando filtros:", params); // Verifica los filtros en la consola
+
         // Evitar llamar a fetchProducts si no hay búsqueda activa
         if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
             fetchProducts(params); // Envía los filtros a fetchProducts
@@ -701,20 +692,6 @@ function CategoryPage() {
                                 </Select>
                             </FormControl>
 
-                            {/* Filtro por descuento */}
-                            <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                                <InputLabel>Descuento</InputLabel>
-                                <Select value={discountFilter} onChange={handleDiscountChange} label="Descuento">
-                                    <MenuItem value={10}>10% o más</MenuItem>
-                                    <MenuItem value={20}>20% o más</MenuItem>
-                                    <MenuItem value={30}>30% o más</MenuItem>
-                                    {/* Agrega más niveles de descuento aquí */}
-                                    <MenuItem value="">Ninguno</MenuItem> {/* Añade una opción vacía */}
-                                    {modelosDisponibles.map((modelo) => (
-                                        <MenuItem key={modelo} value={modelo}>{modelo}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
         
                             {/* Filtro por tienda */}
                             <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
