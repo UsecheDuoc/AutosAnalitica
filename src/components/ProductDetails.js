@@ -9,7 +9,7 @@ import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import config from '../config';
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
-
+import { tienda } from '../constants';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 console.log('ProductDetails montado');
@@ -448,12 +448,13 @@ function ProductDetails() {
                     : '-'}
                 </Typography>
 
+
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handlePurchase(producto.LinkPagina)}
-                    sx={{
-                    mt: 2,
+                variant="contained"
+                color="primary"
+                onClick={() => handlePurchase(producto.LinkPagina)}
+                sx={{
                     px: 4,
                     py: 1,
                     fontSize: '1rem',
@@ -462,13 +463,33 @@ function ProductDetails() {
                     transition: 'all 0.3s ease',
                     boxShadow: 3,
                     '&:hover': {
-                        backgroundColor: 'darkblue',
-                        transform: 'scale(1.05)',
+                      backgroundColor: 'darkblue',
+                      transform: 'scale(1.05)',
                     },
-                    }}
+                  }}
                 >
-                    Comprar
+                {/* Obtener el logo correspondiente */}
+                {tienda
+                    .filter((tiendaItem) => tiendaItem.alt === producto.nombreTienda)
+                    .map((logo, index) => (
+                    <img
+                        key={index}
+                        src={logo.src}
+                        alt={logo.alt}
+                        style={{
+                        width: '24px',
+                        height: '24px',
+                        objectFit: 'contain',
+                        marginRight: '8px', // Espaciado adicional entre el logo y el texto
+                        }}
+                    />
+                    ))}
+                {/* Nombre de la tienda */}
+                {`Visitar ${producto.nombreTienda || 'la tienda'}`}
                 </Button>
+                </Box>
+
+
                 </Box>
             </Paper>
 
