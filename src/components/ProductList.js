@@ -1,7 +1,7 @@
     // src/components/ProductList.js
     import React, { useState, useEffect, useContext } from 'react';
     import axios from 'axios';
-    import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button,IconButton, Pagination, Select, MenuItem,TextField } from '@mui/material';
+    import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button,IconButton, Pagination, Select, MenuItem,TextField,CircularProgress  } from '@mui/material';
     import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
     import "slick-carousel/slick/slick.css";
     import "slick-carousel/slick/slick-theme.css";
@@ -380,6 +380,64 @@
             return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
         };
     
+        //Validacion de correo electronico
+        const [FiltersSub, setSubFilters] = React.useState({
+            marca: '',
+            modelo: '',
+        }); // Estado para los filtros de Sub
+        
+
+        const [email, setEmailSub] = React.useState(''); // Valor del correo
+        const [emailError, setEmailErrorSub] = React.useState(false); // Estado del error
+        const [showTooltip, setShowTooltipSub] = React.useState(false); // Estado para mostrar/ocultar tooltip
+        const [apiMessage, setApiMessage] = useState(''); // Mensaje de la API
+
+        const validateEmail = (email) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Verifica @ y un punto
+            return emailRegex.test(email);
+        };
+
+    const handleSubmit = async () => {
+        // Validar que todos los datos estén completos antes de enviar
+        if (!(FiltersSub.marca && FiltersSub.modelo && validateEmail(email))) {
+            alert('Por favor completa todos los campos correctamente');
+            return;
+        }
+
+        setIsLoading(true); // Mostrar el spinner de carga
+        setApiMessage(''); // Limpiar mensaje anterior
+
+        try {
+            // Datos que serán enviados
+            const payload = {
+                marca: FiltersSub.marca,
+                modelo: FiltersSub.modelo,
+                correo: email,
+            };
+
+            const apiUrl = 'https://api-autoanalitica.onrender.com/productos/notificaciones';
+
+            const response = await axios.post(apiUrl, payload);
+
+            // Manejo de la respuesta
+            if (response.ok) {
+                const data = await response;
+                console.log('Datos enviados con éxito:', data);
+                setApiMessage(data.message || 'Suscripción exitosa. ¡Gracias!'); // Mensaje de la API
+            } else {
+                console.error('Error en la respuesta de la API:', response.statusText);
+                setApiMessage('Hubo un problema al enviar la información. Inténtalo de nuevo.');
+            }
+        } catch (error) {
+            console.error('Error al enviar los datos:', error);
+            setApiMessage('Error al conectar con el servidor. Inténtalo más tarde.');
+        }finally {
+        setIsLoading(false); // Ocultar el spinner de carga
+    }
+    };
+
+
+        
         
         return (
                 <Container 
@@ -914,48 +972,272 @@
                             >
                                 Ingresa tu correo electrónico para estar al día con nuestras novedades.
                             </Typography>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                    maxWidth: '600px',
-                                    mx: 'auto',
-                                    flexDirection: { xs: 'column', sm: 'row' }, // Coloca el botón debajo en pantallas pequeñas
 
+
+                            <Box
+        sx={{
+            position: 'relative',// Asegura que los menús se posicionen de forma adecuada
+            zIndex: 3,
+            overflow: 'visible', // Permite que los menús sean visibles fuera del contenedor
+            display: 'flex',
+            flexWrap: 'wrap', // Permitir que los filtros se acomoden en filas
+            gap: 2,// Espaciado entre los elementos
+            justifyContent: 'center', // Centrar los elementos horizontalmente
+            alignItems: 'center', // Centrar verticalmente
+            padding: 2, // Espaciado interno
+            height: { xs: '100%', md: 'auto' }, // Asegura altura adaptativa en pantallas pequeñas
+            maxWidth: '600px', // Limita el ancho para mantenerlo dentro del contenedor
+            margin: '0 auto', // Centra horizontalmente el contenedor
+            overflow: 'visible', // Permitir que los menús desplegables sean visibles
+            width: { xs: '90%', md: '60%' }, // Ajustar ancho para pantallas pequeñas
+            //mt: { xs: 2, md: 4 }, // Reducir el margen superior en pantallas pequeñas
+            //p: 2, // Agregar padding interno
+            mt: 0, // Ajusta el margen superior
+            p: 0,  // Ajusta el padding
+            maxWidth: '100%', // Limitar el ancho al tamaño del contenedor
+            boxSizing: 'border-box', // Asegurarse de que padding no aumente el tamaño total
+        }}
+    >
+        {/* Filtro de Marca */}
+        <Box sx={{ minWidth: '200px', flex: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Marca
+            </Typography>
+            <Select
+                id="sub"
+                value={FiltersSub.marca ?? ''} // Usa el valor de marca en setSubFilters
+                onChange={(event) => {
+                    const marca = event.target.value;
+                    setSubFilters((prevFilters) => ({
+                        ...prevFilters,
+                        marca,
+                        modelo: '', // Limpia el modelo cuando cambia la marca
+                    }));
+                    fetchModelosPorMarca(marca); // Carga los modelos para la marca seleccionada
+                }}
+                displayEmpty
+                defaultValue=""
+                sx={{
+                    width: '100%', // Responsivo: ocupa todo el ancho disponible
+                    backgroundColor: 'white',
+                    color: 'black',
+                    borderRadius: 1,
+                    width: '100%', // Responsivo: ocupa todo el ancho disponible
+                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                        border: 'none',
+                    },
+                    '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    },
+                }}
+                MenuProps={{
+                    PaperProps: {
+                        style: {
+                            maxHeight: 200, // Limita la altura del menú
+                            overflowY: 'auto', // Habilita el scroll vertical
+                        },
+                    },
+                }}
+            >
+                <MenuItem value="">Selecciona una marca</MenuItem>
+                {marcas && marcas.length > 0 ? (
+                    marcas.map((marca, index) => (
+                        <MenuItem key={index} value={marca}>
+                            {marca}
+                        </MenuItem>
+                    ))
+                ) : (
+                    <MenuItem disabled>Cargando marcas...</MenuItem>
+                )}
+            </Select>
+        </Box>
+
+        {/* Filtro de Modelo */}
+        <Box sx={{ minWidth: '200px', flex: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Modelo
+            </Typography>
+            <Select
+                id="modelo"
+                value={FiltersSub.modelo || ''} // Usa el valor de modelo en setSubFilters
+                onChange={(event) =>
+                    setSubFilters((prevFilters) => ({
+                        ...prevFilters,
+                        modelo: event.target.value,
+                    }))
+                }
+                disabled={!FiltersSub.marca} // Deshabilita si no hay marca seleccionada
+                displayEmpty
+                defaultValue=""
+                renderValue={(selected) => {
+                    if (!selected) {
+                        return 'Seleccione un modelo'; // Texto predeterminado
+                    }
+                    return selected; // Muestra el modelo seleccionado
+                }}
+                sx={{
+                    width: '100%', // Responsivo: ocupa todo el ancho disponible
+                    backgroundColor: 'white',
+                    color: 'black',
+                    borderRadius: 1,
+                    width: '100%', // Responsivo: ocupa todo el ancho disponible
+                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                        border: 'none',
+                    },
+                    '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    },
+                }}
+                MenuProps={{
+                    PaperProps: {
+                        style: {
+                            maxHeight: 200, // Limita la altura del menú
+                            overflowY: 'auto', // Habilita el scroll vertical
+                        },
+                    },
+                }}
+            >
+                {modelosDisponibles && modelosDisponibles.length > 0 ? (
+                    modelosDisponibles.map((modelo, index) => (
+                        <MenuItem key={index} value={modelo}>
+                            {modelo}
+                        </MenuItem>
+                    ))
+                ) : (
+                    <MenuItem value="" disabled>
+                        No hay modelos disponibles
+                    </MenuItem>
+                )}
+            </Select>
+        </Box>
+
+        {/* Correo electrónico */}
+        <Box sx={{ minWidth: '200px', flex: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Correo electrónico
+            </Typography>
+            <TextField
+                variant="outlined"
+                placeholder="Tu correo electrónico"
+                fullWidth
+                value={email} // Estado para manejar el valor del campo
+                onChange={(event) => {
+                    setEmailSub(event.target.value);
+                    setEmailErrorSub(false); // Elimina el error si el usuario escribe algo nuevo
+                }}
+                onBlur={() => setEmailErrorSub(!validateEmail(email))} // Valida el correo al salir del campo
+                InputProps={{
+                    endAdornment: emailError && (
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                            }}
+                            onMouseEnter={() => setShowTooltipSub(true)} // Muestra el mensaje al pasar el mouse
+                            onMouseLeave={() => setShowTooltipSub(false)} // Oculta el mensaje al quitar el mouse
+                        >
+                            <Typography
+                                sx={{
+                                    color: 'red',
+                                    fontSize: '1.2rem',
                                 }}
                             >
-                                <TextField
-                                    variant="outlined"
-                                    placeholder="Tu correo electrónico"
-                                    fullWidth // Hace que el botón ocupe todo el ancho en pantallas pequeñas
+                                ⚠️
+                            </Typography>
+                            {/* Tooltip flotante */}
+                            {showTooltip && (
+                                <Box
                                     sx={{
-                                        bgcolor: 'white',
-                                        borderRadius: 1,
-                                        '& input': { color: 'black' },
-                                    }}
-                                />
-                                <Button
-                                    variant="contained"
-                                    //color="primary"
-                                    fullWidth // Hace que el botón ocupe todo el ancho en pantallas pequeñas
-
-                                    sx={{
-                                        px: 4,
-                                        py: 1.5,
-                                        fontWeight: 'bold',
-                                        textTransform: 'uppercase',
-                                        fontSize: { xs: '0.8rem', sm: '1rem' }, // Tamaño responsivo del texto
-                                        backgroundColor: '#FFCC00', // Color naranja para resaltar
-                                        color: 'black',
+                                        position: 'absolute',
+                                        top: '-30px',
+                                        right: '0',
+                                        backgroundColor: 'white',
+                                        color: 'red',
+                                        border: '1px solid red',
+                                        borderRadius: '8px',
+                                        padding: '5px 10px',
+                                        fontSize: '0.8rem',
+                                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                        zIndex: 10,
+                                        whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    Suscribirse
-                                </Button>
-                            </Box>
+                                    Por favor ingresa un correo válido
+                                </Box>
+                            )}
                         </Box>
-                    </Box>
+                    ),
+                }}
+                error={emailError} // Borde rojo si hay error
+                sx={{
+                    bgcolor: 'white',
+                    borderRadius: 1,
+                    '& input': { color: 'black' },
+                    '& .MuiOutlinedInput-root': {
+                        borderColor: emailError ? 'red' : '', // Borde rojo si hay error
+                        '&:hover fieldset': {
+                            borderColor: emailError ? 'red' : '', // Borde rojo al pasar el mouse
+                        },
+                    },
+                    width: '100%',
+                }}
+            />
+        </Box>
+
+
+
+
+            {/* Botón de Suscribirse */}
+            <Box sx={{ flex: 1 }}>
+                <Button
+                    variant="contained"
+                    disabled={isLoading ||!(FiltersSub.marca && FiltersSub.modelo && validateEmail(email))} // Validación de todos los campos
+                    onClick={handleSubmit} // Llama al manejador
+                    sx={{
+                        mt:3,
+                        px: 4,
+                        py: 1.5,
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase',
+                        fontSize: { xs: '0.8rem', sm: '1rem' },
+                        backgroundColor: '#FFCC00',
+                        color: 'black',
+                        width: '100%',
+
+                        cursor: !(FiltersSub.marca && FiltersSub.modelo && validateEmail(email))
+                            ? 'not-allowed' // Cursor no permitido cuando está deshabilitado
+                            : 'pointer', // Cursor de puntero cuando está habilitado
+                        borderRadius: '8px',
+                        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)', // Sombra uniforme
+
+                        //opacity: !(FiltersSub.marca && FiltersSub.modelo && validateEmail(email)) ? 0.5 : 1, // Opacidad para botón deshabilitado
+                        //cursor: !(FiltersSub.marca && FiltersSub.modelo && validateEmail(email)) ? 'not-allowed' : 'pointer', // Cambia el cursor
+                    }}
+                >
+                    {isLoading ? <CircularProgress size={24} /> : 'Suscribirse'} {/* Spinner durante la carga */}
+                </Button>
+            </Box>
+                    
+            {/* Mensaje de la API */}
+            {apiMessage && (
+                <Typography
+                    variant="body2"
+                    sx={{
+                        mt: 2,
+                        color: apiMessage.includes('Error') ? 'red' : 'green', // Mensaje de error o éxito
+                        textAlign: 'center',
+                    }}
+                >
+                    {apiMessage}
+                </Typography>
+            )}
+         </Box>
+        </Box>
+        </Box>
 
 
 
