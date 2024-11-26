@@ -14,7 +14,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Collapse from '@mui/material/Collapse';
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 import { CATEGORIES } from "../constants";
-import { tiendasAsociadas } from "../constants";
+import { tienda } from "../constants";
 
 
 // Función para capitalizar las rutas (opcional)
@@ -63,7 +63,10 @@ function CategoryPage() {
 
 
     const handleDiscountChange = (event) => setDiscountFilter(event.target.value);
-    const handleStoreChange = (event) => setStoreFilter(event.target.value);
+    const handleStoreChange = (event) => {
+        setStoreFilter(event.target.value);
+        applyFilters(); // Llamar a `applyFilters` cada vez que cambie el filtro de modelo
+    };
     // Estado adicional para el filtro de categoría
 
     // Función para manejar el cambio de categoría en el filtro
@@ -164,6 +167,8 @@ function CategoryPage() {
 
         setBrandFilter(marca || "");
         setModelFilter(modelo || "");
+        setStoreFilter(tienda || "");
+
         setCategoryFilter(categoria || "");
     
         if (marca || modelo || categoria) {
@@ -251,31 +256,34 @@ function CategoryPage() {
     
     
         const fetchProducts = (params) => {
-            if (!params.marca && !params.modelo && !params.categoria && !params.nombre) {
+            if (!params.marca && !params.modelo && !params.categoria && !params.nombre&& !params.tienda) {
                 console.log("No hay parámetros válidos para ejecutar fetchProducts.");
                 return;
             }
             setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
-            fetchWithFallback(`/productos/buscar-similares`, {params})
-            .then(response => {
-                const data = response.data || [];
-                console.log('Datos extraidos de la api',{data})
+            fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`)
 
-                if (!Array.isArray(data) || data.length === 0) {
+            .then(response => {
+                console.log('Datos extraidos de la api',response)
+
+                if (!Array.isArray(response) || response.length === 0) {
                     setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
                     setProductos([]);
                     return;
                 }
                 
-                console.log("Productos recibidos:", response.data);
-                setProductos(response.data);
-                if (response.data.length === 0) {
+                console.log("Productos recibidos:", response);
+                setProductos(response);
+                if (response === 0) {
                     setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
                 }
+
+
+                
             })
             .catch(error => {
                 console.error("Error al obtener productos:", error);
-                setErrorMessage(error.response?.data?.message || "No se encontraron productos que coincidan con la búsqueda.");
+                setErrorMessage(error.response?.message || "No se encontraron productos que coincidan con la búsqueda.");
             });
         };
     
@@ -393,17 +401,17 @@ function CategoryPage() {
         };
 
         // Verifica si hay parámetros válidos
-        if (!params.nombre && !params.marca && !params.modelo && !params.categoria) {
+        if (!params.nombre && !params.marca && !params.modelo && !params.categoria && !params.tienda) {
             console.log("Filtros inválidos o vacíos.");
             setProductos([]);
-            setErrorMessage("No se encontraron productos.");
+            //setErrorMessage("No se encontraron productos.");
             return;
         }
     
         console.log("Aplicando filtros:", params); // Verifica los filtros en la consola
 
         // Evitar llamar a fetchProducts si no hay búsqueda activa
-        if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
+        if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo|| params.tienda) {
             fetchProducts(params); // Envía los filtros a fetchProducts
         } else {
             console.log("No se ejecuta fetchProducts porque no hay parámetros relevantes.");
@@ -695,13 +703,20 @@ function CategoryPage() {
         
                             {/* Filtro por tienda */}
                             <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                                <InputLabel>Tienda</InputLabel>
-                                <Select value={storeFilter} onChange={handleStoreChange} label="Tienda">
-                                    <MenuItem value="Paris">Paris</MenuItem>
-                                    <MenuItem value="Falabella">Falabella</MenuItem>
-                                    {/* Agrega más tiendas aquí */}
-                                </Select>
-                            </FormControl>
+                            <InputLabel>Tienda</InputLabel>
+                            <Select 
+                            value={storeFilter} 
+                            onChange={(event) => 
+                                setStoreFilter(event.target.value)} 
+                                label="tienda"
+                            >
+                                {tienda.map((tienda, index) => (
+                                <MenuItem key={index} value={tienda.alt}>
+                                    {tienda.alt}
+                                </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
         
                             {/* Filtro de Categoria */}
                             <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
@@ -919,12 +934,18 @@ function CategoryPage() {
                         </Grid>
         
                         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                        {Array.isArray(productos) && productos.length > 0 ? (
+
                             <Pagination
                                 count={Math.ceil(productos.length / productsPerPage)}
                                 page={page}
                                 onChange={handlePageChange}
                                 color="primary"
                             />
+                        ):(                            
+                        <Typography variant="body2" color="textSecondary">
+                            No hay productos para mostrar.
+                        </Typography>)}
                         </Box>
                         </>
                         )}

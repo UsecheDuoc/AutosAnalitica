@@ -53,6 +53,7 @@ function SearchResults() {
     
         const marca = queryParams.get('marca') || '';
         const modelo = queryParams.get('modelo') || '';
+        const tienda = queryParams.get('empresa_procedencia') || '';
         const categoria = queryParams.get('categoria') || '';
         const nombre = queryParams.get("q") || "";
 
@@ -60,6 +61,7 @@ function SearchResults() {
         setBrandFilter(nombre|| "");
         setBrandFilter(marca || "");
         setModelFilter(modelo || "");
+        setStoreFilter(tienda || "");
         setCategoryFilter(categoria || "");
 
         applyFilters();
@@ -87,15 +89,19 @@ function SearchResults() {
 
             console.log("Parámetros recibidos en FetchProducts desde apply:", params);
 
+            
             setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
-            const productos = await fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}`
+            const productos = await fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`
             );            
             setProductos(productos);
             console.log("Respuesta completa de la API:", productos);
+            if (productos === 0) {
+                setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
+            }
 
     }   catch(error ) {
             console.error("Error al obtener productos:", error);
-            setErrorMessage(error.response?.data?.message || "No se encontraron productos que coincidan con la búsqueda.");
+            setErrorMessage(error.response?.message || "No se encontraron productos que coincidan con la búsqueda.");
         
             
         };
@@ -279,13 +285,13 @@ function SearchResults() {
         if (!params.nombre && !params.marca && !params.modelo && !params.categoria) {
             console.log("Filtros inválidos o vacíos.");
             setProductos([]);
-            setErrorMessage("No se encontraron productos.");
+            //setErrorMessage("No se encontraron productos.");
             return;
         }
     
         console.log("Aplicando filtros en applyfilter en SearhcResults:", params); // Verifica los filtros en la consola
 
-        if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo) {
+        if (location.pathname === "/search" || searchTerm || params.marca || params.categoria || params.modelo|| params.tienda) {
             fetchProducts(params); // Envía los filtros a fetchProducts
             console.log('Esto lo podro colocar? ', params)
         } else {
@@ -293,9 +299,12 @@ function SearchResults() {
         }
 
     };
+
+
     const handleCloseModal = () => {
         setOpenModal(false);
     };
+
     //FUNCION QUE TOMA LOS LOGOS DE LA LISTA DE TIENDAS
     const getStoreLogo = (storeName) => {
         const tiendaLogos = [
@@ -376,7 +385,7 @@ function SearchResults() {
                             }}
                         />
                         <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 0, position: 'relative', zIndex: 2,fontSize: { xs: '1.8rem', md: '3rem' }}}>
-                            Resultados de "{searchTerm}"
+                            Resultados de tu busqueda:
                         </Typography>
                     </Box>
 
@@ -483,10 +492,17 @@ function SearchResults() {
                         {/* Filtro por Tienda */}
                         <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
                             <InputLabel>Tienda</InputLabel>
-                            <Select value={storeFilter} onChange={handleStoreChange} label="Tienda">
-                                <MenuItem value="Paris">Paris</MenuItem>
-                                <MenuItem value="Falabella">Falabella</MenuItem>
-                                <MenuItem value="">Ninguno</MenuItem>
+                            <Select 
+                                value={storeFilter} 
+                                onChange={(event) => 
+                                    setStoreFilter(event.target.value)} 
+                                    label="tienda"
+                            >
+                                {tienda.map((tienda, index) => (
+                                <MenuItem key={index} value={tienda.alt}>
+                                    {tienda.alt}
+                                </MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
 
@@ -685,7 +701,9 @@ function SearchResults() {
                                 </Grid>
                             ))
                         ) : (
-                            <Typography variant="h6" sx={{ mt: 2 }}>No se encontraron productos</Typography>
+                            <Typography variant="h6" color="error">
+                                {errorMessage || "No hay productos disponibles."}
+                            </Typography>
                         )}
                     </Grid>
 
@@ -700,7 +718,6 @@ function SearchResults() {
                         />
                         ) : (
                             <Typography variant="body2" color="textSecondary">
-                                No hay productos para mostrar.
                             </Typography>
                         )}
                     </Box>
