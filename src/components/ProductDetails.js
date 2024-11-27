@@ -504,6 +504,7 @@ function ProductDetails() {
                 width: '100%',
                 }}
             >
+
             {/* Características */}
             <Paper elevation={4} sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
@@ -536,9 +537,12 @@ function ProductDetails() {
                             padding: '8px',
                             border: '1px solid #ddd',
                             textAlign: 'left',
+                            color: producto.marca !== "null" && producto.marca !== undefined && producto.marca !== "No especificado"
+                            ? 'black' // Color normal
+                            : 'red', // Color para "No especificado"
                         }}
                         >
-                        {producto.marca || 'No especificado'}
+                        {producto.marca !== "null" && producto.marca !== undefined ? producto.marca : 'No especificado'}
                         </td>
                     </tr>
                     <tr>
@@ -557,9 +561,12 @@ function ProductDetails() {
                             padding: '8px',
                             border: '1px solid #ddd',
                             textAlign: 'left',
+                            color: producto.modelo !== "null" && producto.modelo !== undefined && producto.modelo !== "No especificado"
+                            ? 'black' // Color normal
+                            : 'red', // Color para "No especificado"
                         }}
                         >
-                        {producto.modelo || 'No especificado'}
+                        {producto.modelo !== "null" && producto.modelo !== undefined ? producto.modelo : 'No especificado'}
                         </td>
                     </tr>
                     <tr>
@@ -578,9 +585,12 @@ function ProductDetails() {
                             padding: '8px',
                             border: '1px solid #ddd',
                             textAlign: 'left',
+                            color: producto.categoria !== "null" && producto.categoria !== undefined && producto.categoria !== "No especificado"
+                            ? 'black' // Color normal
+                            : 'red', // Color para "No especificado"
                         }}
                         >
-                        {producto.categoria || 'No especificado'}
+                        {producto.categoria !== "null" && producto.categoria !== undefined ? producto.categoria : 'No especificado'}
                         </td>
                     </tr>
                     <tr>
@@ -599,9 +609,12 @@ function ProductDetails() {
                             padding: '8px',
                             border: '1px solid #ddd',
                             textAlign: 'left',
+                            color: producto.color !== "null" && producto.color !== undefined && producto.color !== "No especificado"
+                            ? 'black' // Color normal
+                            : 'red', // Color para "No especificado"
                         }}
                         >
-                        {producto.color || 'No especificado'}
+                        {producto.color !== "null" && producto.color !== undefined ? producto.color : 'No especificado'}
                         </td>
                     </tr>
                     <tr>
@@ -620,9 +633,13 @@ function ProductDetails() {
                             padding: '8px',
                             border: '1px solid #ddd',
                             textAlign: 'left',
+                            color: producto.material !== "null" && producto.material !== undefined && producto.material !== "No especificado"
+                            ? 'black' // Color normal
+                            : 'red', // Color para "No especificado"
                         }}
                         >
-                        {producto.material || 'No especificado'}
+                        {producto.material !== "null" && producto.material !== undefined ? producto.material : 'No especificado'}
+
                         </td>
                     </tr>
                     {/* Agregar más características si es necesario */}
@@ -649,7 +666,7 @@ function ProductDetails() {
                 }}
             >
                 <Typography variant="body1" color="text.secondary" sx={{ lineHeight: '1.5' }}>
-                {producto.descripcion || 'No especificada'}
+                {producto.descripcion !== "null" && producto.descripcion !== undefined ? producto.descripcion : 'No especificado'}
                 </Typography>
             </Box>
             </Paper>

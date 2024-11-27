@@ -424,18 +424,41 @@
 
                 const response = await axios.post(apiUrl, payload);
 
-                // Manejo de la respuesta
-                if (response.ok) {
-                    const data = await response;
+                // Manejo de la respuesta de la API
+                if (response.status >= 200 && response.status < 300) {
+                    const data = response; // Obtener datos de la respuesta
                     console.log('Datos enviados con éxito:', data);
-                    setApiMessage(data.message || 'Suscripción exitosa. ¡Gracias!'); // Mensaje de la API
+
+                    // Mostrar mensaje de éxito
+                    setApiMessage(data.message || 'Suscripción exitosa. ¡Gracias por registrarte!');
                 } else {
-                    console.error('Error en la respuesta de la API:', response.statusText);
-                    setApiMessage('Hubo un problema al enviar la información. Inténtalo de nuevo.');
+                    // Manejo de errores en respuestas fuera del rango 2xx
+                    console.error('Error en la respuesta de la API:', response.status, response.statusText);
+                    setApiMessage(
+                        `Hubo un problema al enviar la información. Código de error: ${response.status}. Inténtalo de nuevo.`
+                    );
                 }
+
+
+
+
+
             } catch (error) {
                 console.error('Error al enviar los datos:', error);
                 setApiMessage('Error al conectar con el servidor. Inténtalo más tarde.');
+
+                if (error.response) {
+                    // Si el servidor respondió con un código de error
+                    setApiMessage(
+                        `Error del servidor: ${error.response.status}. ${error.response.data.message || 'Por favor, inténtalo más tarde.'}`
+                    );
+                } else if (error.request) {
+                    // Si no se recibió respuesta del servidor
+                    setApiMessage('No se recibió respuesta del servidor. Por favor, verifica tu conexión a internet.');
+                } else {
+                    // Errores imprevistos en la configuración de la solicitud
+                    setApiMessage('Ocurrió un error inesperado. Por favor, inténtalo más tarde.');
+                }
             }finally {
             setIsLoading(false); // Ocultar el spinner de carga
         }
@@ -977,7 +1000,7 @@
 
                                 }}
                             >
-                                Ingresa tu correo electrónico para estar al día con nuestras novedades.
+                                Ingresa tu auot y correo electrónico para enviarte descuentos exclusivos y estar al día con nuestras novedades.
                             </Typography>
 
 
@@ -1253,8 +1276,17 @@
                                     variant="body2"
                                     sx={{
                                         mt: 2,
-                                        color: apiMessage.includes('Error') ? 'red' : 'green', // Mensaje de error o éxito
+                                        color: apiMessage.includes('Error') ? 'yellow' : 'green', // Amarillo para errores, verde para éxito
+                                        fontWeight: 'bold', // Texto en negrita
                                         textAlign: 'center',
+                                        fontSize: '1.5rem', // Tamaño del texto
+                                        backgroundColor: 'white', // Fondo blanco para ambos casos
+                                        padding: '15px', // Espaciado interno para mayor estética
+                                        borderRadius: '10px', // Bordes redondeados
+                                        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)', // Sombra sutil para dar relieve
+                                        border: `2px solid ${
+                                            apiMessage.includes('Error') ? 'yellow' : 'green'
+                                        }`, // Borde amarillo para errores y verde para éxito
                                     }}
                                 >
                                     {apiMessage}

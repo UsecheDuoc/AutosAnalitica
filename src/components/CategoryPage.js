@@ -433,7 +433,7 @@ function CategoryPage() {
               }
         } catch (error) {
             console.error("Error al obtener productos por marca:", error);
-            setErrorMessage("Hubo un error al obtener los productos por marca. Por favor, intenta de nuevo.");
+            setErrorMessage("No se encontraron productos para la marca seleccionada.");
         }
     };
      
@@ -928,8 +928,8 @@ function CategoryPage() {
                             ))
                         ) : (
                             <Typography variant="h6" color="error">
-                                {errorMessage || "No hay productos disponibles."}
-                            </Typography>
+                                {errorMessage || "No se encontraron productos que coincidan con la búsqueda."}
+                                </Typography>
                         )}
                         </Grid>
         
@@ -1033,6 +1033,8 @@ function CategoryPage() {
                                         >
                                             {producto.nombre || '-'}
                                         </Typography>
+
+
                                         {/* Contenedor de las características */}
                                         <Box
                                             sx={{
@@ -1050,41 +1052,30 @@ function CategoryPage() {
 
                                             {/*Marca*/}
                                             <Typography variant="body2">
-                                                <strong>Marca:</strong> {producto.marca || '-'}
+                                                <strong>Marca:</strong> {producto.marca !== "null" && producto.marca !== undefined ? producto.marca : 'No especificado'}
                                             </Typography>
 
                                             {/* Modelo*/}
                                             <Typography variant="body2">
-                                                <strong>Modelo:</strong> {producto.modelo || '-'}
+                                                <strong>Modelo:</strong> {producto.modelo !== "null" && producto.modelo !== undefined ? producto.modelo : 'No especificado'}
                                             </Typography>
 
                                             {/* Numero de pieza*/}
                                             <Typography variant="body2">
-                                                <strong>N. Pieza:</strong> {producto.numero_pieza || '-'}
+                                                <strong>N. Pieza:</strong> {producto.numero_pieza !== "null" && producto.numero_pieza !== undefined ? producto.numero_pieza : 'No especificado'}
                                             </Typography>
 
                                             {/*Tipo de vehiculo*/}
                                             <Typography variant="body2">
-                                                <strong>Tipo vehiculo:</strong> {producto.tipo_vehiculo || '-'}
+                                                <strong>Tipo vehiculo:</strong> {producto.tipo_vehiculo !== "null" && producto.tipo_vehiculo !== undefined ? producto.tipo_vehiculo : 'No especificado'}
                                             </Typography>
-                                            
-
 
                                             {/*Material*/}
                                             <Typography variant="body2">
-                                                <strong>Material:</strong> {producto.material || '-'}
+                                                <strong>Material:</strong> {producto.material !== "null" && producto.material !== undefined ? producto.material : 'No especificado'}
                                             </Typography>
 
                                             
-
-                                            {/* Descuento*/}
-                                            <Typography variant="body2">
-                                                <strong>Descuento:</strong> {producto.descuento || '-'}
-                                            </Typography>
-
-
-
-
                                             {/* Tienda*/}
                                             <Typography
                                                 variant="body2"

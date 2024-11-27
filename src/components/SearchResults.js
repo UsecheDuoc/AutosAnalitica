@@ -312,6 +312,8 @@ function SearchResults() {
             { src: 'https://http2.mlstatic.com/D_NQ_NP_790984-MLA78333190102_082024-F.jpg', alt: 'RepuestosMaraCars' },
             { src: 'https://repuestoscr.com.do/wp-content/uploads/sites/248/2022/05/logo.jpg', alt: 'RepuestosCYR' },
             { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvM45GeQwsnw244fJUIQHMVgWY776TF11X6w&s', alt: 'Bolomey' },
+            { src: 'https://cdn.worldvectorlogo.com/logos/mercadolibre.svg', alt: 'MercadoLibre' },
+
 
         ];
     
@@ -327,7 +329,6 @@ function SearchResults() {
     : [];
 
     
-
 
 
 
@@ -702,7 +703,7 @@ function SearchResults() {
                             ))
                         ) : (
                             <Typography variant="h6" color="error">
-                                {errorMessage || "No hay productos disponibles."}
+                                {errorMessage || "No se encontraron productos que coincidan con la búsqueda."}
                             </Typography>
                         )}
                     </Grid>
@@ -814,14 +815,34 @@ function SearchResults() {
                                                 gap: 1, // Espaciado entre líneas
                                             }}
                                         >
+                                            {/*Precio*/}
                                             <Typography variant="body2">
                                                 <strong>Precio:</strong> {producto.precio_actual ? producto.precio_actual.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' }) : '-'}
                                             </Typography>
+
+                                            {/*Marca*/}
                                             <Typography variant="body2">
-                                                <strong>Marca:</strong> {producto.marca || '-'}
+                                                <strong>Marca:</strong> {producto.marca !== "null" && producto.marca !== undefined ? producto.marca : 'No especificado'}
                                             </Typography>
+                                            
+                                            {/* Modelo*/}
                                             <Typography variant="body2">
-                                                <strong>Descuento:</strong> {producto.descuento || '-'}
+                                                <strong>Modelo:</strong> {producto.modelo !== "null" && producto.modelo !== undefined ? producto.modelo : 'No especificado'}
+                                            </Typography>
+
+                                            {/* Numero de pieza*/}
+                                            <Typography variant="body2">
+                                                <strong>N. Pieza:</strong> {producto.numero_pieza !== "null" && producto.numero_pieza !== undefined ? producto.numero_pieza : 'No especificado'}
+                                            </Typography>
+
+                                            {/*Tipo de vehiculo*/}
+                                            <Typography variant="body2">
+                                                <strong>Tipo vehiculo:</strong> {producto.tipo_vehiculo !== "null" && producto.tipo_vehiculo !== undefined ? producto.tipo_vehiculo : 'No especificado'}
+                                            </Typography>
+
+                                            {/*Material*/}
+                                            <Typography variant="body2">
+                                                <strong>Material:</strong> {producto.material !== "null" && producto.material !== undefined ? producto.material : 'No especificado'}
                                             </Typography>
                                             
                                             <Typography

@@ -10,11 +10,21 @@ const GraficoEmpresas = () => {
 
    // Leyenda del identificador por empresa
    const empresaMapping = {
-    "0": "BolomeYVentas",
-    "1": "RepuestosCoroca",
-    "2": "RepuestosCyR",
-    "3": "RepuestosMaracars",
+    "0": "RepuestosMaracars", //No mover
+    "1": "RepuestosCyR", //No mover
+    "2": "MercadoLibre",
+    "3": "BolomeYVentas",
+    "4": "RepuestosCoroca",//No mover
+
   };
+
+  
+
+  /*"0": "RepuestosCyR",
+  "1": "RepuestosCoroca",
+  "2": "RepuestosMaracars",
+  "3": "MercadoLibre",
+  "4": "BolomeYVentas",*/
 
   useEffect(() => {
     const fetchEmpresas = async () => {
