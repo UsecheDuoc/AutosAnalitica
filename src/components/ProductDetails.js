@@ -438,7 +438,7 @@ function ProductDetails() {
     const lastPrice = producto.historial_precios?.length
     ? producto.historial_precios
           .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-          .at(-3)?.precio//Prnultimo precio del array historial
+          .at(-2)?.precio//Prnultimo precio del array historial
     : null;
 
     //formula para calcular el porcentaje de cambio respoecto al penultimo precio
