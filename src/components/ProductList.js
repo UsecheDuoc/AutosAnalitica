@@ -52,7 +52,6 @@
 
     function ProductList() {
         const { modelosDisponibles = [], setModelosDisponibles } = useContext(ModelosContext);
-        console.log(modelosDisponibles); // Aquí puedes usar modelosDisponibles
         const [productos, setProductos] = useState([]);
         const [page, setPage] = useState(1);
         const productsPerPage = 20;
@@ -69,6 +68,7 @@
         const limitedProducts = Array.isArray(productos) && productos.length > 0 ? productos.slice(0, 5) : [];
         const [selectedMarca, setSelectedMarca] = React.useState('');
         const [productosDestacados, setProductosDestacados] = useState([]);
+        const [uniqueData, setuniqueData] = useState([]);
 
 
 
@@ -281,6 +281,8 @@
 
         const fetchModelosPorMarca = async (marca) => {
             try {
+                console.log('El listado ya tiene: ',modelosDisponibles)
+
                 const response = await fetchWithFallback(`/productos/modelos?marca=${encodeURIComponent(marca)}`);
                 const data = response;
                 console.log("Modelos recibidos:", data);
@@ -299,7 +301,6 @@
 
                 setModelosDisponibles(uniqueData); // Actualiza el estado con los modelos únicos
                 console.log("Modelos únicos disponibles para la marca:", uniqueData);
-
 
 
 
@@ -349,15 +350,8 @@
         };
         
         const renderModelosOptions = () => {
-            if (!Array.isArray(modelosDisponibles)) {
-                return (
-                    <MenuItem value="" disabled>
-                        No hay modelos disponibles
-                    </MenuItem>
-                );
-            }
-        
-            if (modelosDisponibles.length === 0) {
+            // Verifica si no es un arreglo o si está vacío
+            if (!Array.isArray(modelosDisponibles) || modelosDisponibles.length === 0) {
                 return (
                     <MenuItem value="" disabled>
                         No hay modelos disponibles
@@ -667,61 +661,47 @@
                             Modelo: 
                         </Typography>
                             <Select
-                            id="modelo"
-                            value={selectedFilters.modelo || ''} // Usa el valor de modelo en selectedFilters
-                            onChange={(event) =>
-                                setSelectedFilters((prevFilters) => ({
-                                    ...prevFilters,
-                                    modelo: event.target.value,
-                                }))
-                            }
-                            disabled={!selectedFilters.marca} // Deshabilita si no hay marca seleccionada
-                            displayEmpty
-                            defaultValue=""
-                            renderValue={(selected) => {
-                                if (!selected) {
-                                    return "Seleccione un modelo"; // Texto predeterminado
+                                id="modelo"
+                                value={selectedFilters.modelo || ''} // Usa el valor de modelo en selectedFilters
+                                onChange={(event) =>
+                                    setSelectedFilters((prevFilters) => ({
+                                        ...prevFilters,
+                                        modelo: event.target.value,
+                                    }))
                                 }
-                                return selected; // Muestra el modelo seleccionado
-                            }}
-                            sx={{
-                                width: { xs: '90%', sm: '200px' }, // Tamaño responsivo: 90% en pantallas pequeñas, fijo en pantallas grandes
-                                maxWidth: '300px', // Limitar el tamaño máximo                                
-                                backgroundColor: 'white',
-                                color: 'black',
-                                borderRadius: '8px',
-                                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-                                '& .MuiOutlinedInput-notchedOutline': {
-                                border: 'none',
-                                },
-                                '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                },
-                            }}
-                            MenuProps={{
-                                PaperProps: {
-                                    style: {
-                                        maxHeight: 200, // Limita la altura del menú
-                                        overflowY: 'auto', // Habilita el scroll vertical
+                                disabled={!selectedFilters.marca} // Deshabilita si no hay marca seleccionada
+                                displayEmpty
+                                defaultValue=""
+                                renderValue={(selected) => {
+                                    if (!selected) {
+                                        return "Seleccione un modelo"; // Texto predeterminado
+                                    }
+                                    return selected; // Muestra el modelo seleccionado
+                                }}
+                                sx={{
+                                    width: { xs: '90%', sm: '200px' }, // Tamaño responsivo: 90% en pantallas pequeñas, fijo en pantallas grandes
+                                    maxWidth: '300px', // Limitar el tamaño máximo                                
+                                    backgroundColor: 'white',
+                                    color: 'black',
+                                    borderRadius: '8px',
+                                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+                                    '& .MuiOutlinedInput-notchedOutline': {
+                                    border: 'none',
                                     },
-                                },
-                            }}
-                            >
-
-                            {/* Opciones del Select */}
-                            {Array.isArray(modelosDisponibles) && modelosDisponibles.length > 0 ? (
-                                modelosDisponibles.map((modelo, index) => (
-                                    <MenuItem key={index} value={modelo}>
-                                        {modelo}
-                                    </MenuItem>
-                                ))
-                            ) : (
-                                <MenuItem value="" disabled>
-                                    No hay modelos disponibles
-                                </MenuItem>
-                            )}
-
-                            {renderModelosOptions()}
+                                    '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                    },
+                                }}
+                                MenuProps={{
+                                    PaperProps: {
+                                        style: {
+                                            maxHeight: 200, // Limita la altura del menú
+                                            overflowY: 'auto', // Habilita el scroll vertical
+                                        },
+                                    },
+                                }}
+                                >
+                                {renderModelosOptions()} {/* Usa solo esta función para gestionar las opciones */}
                             </Select>
                         </Box>
 

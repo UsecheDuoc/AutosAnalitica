@@ -188,7 +188,7 @@ function SearchResults() {
             try {
                 const response = fetchWithFallback(`/productos/modelos`, { params: { marca: selectedBrand } });
                 const modelos = response;
-                setModelosDisponibles(modelos);
+                setModelosDisponibles(response);
             } catch (error) {
                 console.error("Error al obtener modelos:", error);
                 setModelosDisponibles([]); // Limpiar modelos en caso de error
@@ -250,8 +250,6 @@ function SearchResults() {
             alert("Selecciona al menos 2 productos para comparar.");
         }
     };
-
-
 
     const handleCompareToggle = () => {
         setCompareMode(!compareMode);
