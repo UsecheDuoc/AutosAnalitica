@@ -10,7 +10,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import config from '../config';
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 import { tienda } from '../constants';
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+import annotationPlugin from 'chartjs-plugin-annotation';
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip,annotationPlugin, Legend);
 
 console.log('ProductDetails montado');
 
@@ -53,6 +54,10 @@ function ProductDetails() {
     const [isLoading, setIsLoading] = useState(false);
     const [productosDestacados, setProductosDestacados] = useState([]);
     const [expanded, setExpanded] = useState(null);
+    const [priceHistoryData, setPriceHistoryData] = useState(null); // Estado para los datos del gráfico
+    const [predicciones, setPredicciones] = useState([]);
+
+
     //Productos destacados
     useEffect(() => {
         fetchProductosDestacados();
@@ -171,6 +176,220 @@ function ProductDetails() {
         fetchRelated();
     }, [id]);
 
+  
+
+    
+    const fetchPredictions = async (productoId) => {
+        try {
+            const response = await fetchWithFallback(`/productos/prediccion/${productoId}`);
+            console.log('La prediccion: ',response)
+
+
+            // Verificar si la respuesta tiene el formato correcto
+            if (response && typeof response === "object" && response._id) {
+                console.log("Predicciones obtenidas:", response);
+    
+                // Filtrar predicciones con fecha futura
+                const fechaActual = new Date();
+                const fechaPrediccion = new Date(response.fecha_futura);
+                if (fechaPrediccion > fechaActual) {
+                    return [response]; // Devuelve la predicción como un array para mantener consistencia
+                } else {
+                    console.warn("La predicción tiene una fecha pasada.");
+                    return [];
+                }
+            } else {
+                console.warn(`Error: Respuesta no válida con código ${response?.status}`);
+                return [];
+            }
+        } catch (error) {
+            console.error("Error al obtener las predicciones:", error);
+            return [];
+        }
+    };
+    
+    //Para el historial de precio
+    useEffect(() => {
+        const fetchAndRenderPriceHistory = async () => {
+            try {
+                const fetchedPredicciones = await fetchPredictions(producto._id);
+                const priceHistory = combinePriceHistoryWithPredictions(
+                    producto.historial_precios,
+                    fetchedPredicciones
+                );
+                console.log("Datos finales para el gráfico:", priceHistory);
+                setPriceHistoryData(priceHistory);
+                console.log("Estructura final de labels:", priceHistoryData.labels);
+                console.log("Estructura final de datasets:", priceHistoryData.datasets);
+
+            } catch (error) {
+                console.error("Error al procesar el historial de precios:", error);
+            }
+        };
+    
+        if (producto) {
+            fetchAndRenderPriceHistory();
+        }
+    }, [producto]);
+    
+    const priceHistoryOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true,
+            },
+            tooltip: {
+                callbacks: {
+                    label: (context) => `Precio: $${context.raw?.toLocaleString("es-CL")}`,
+                },
+            },
+            annotation: {
+                annotations: {
+                    predictionArea: {
+                        type: "box",
+                        xMin: priceHistoryData?.labels?.[priceHistoryData.labels.length - 2] || null, // Última etiqueta del historial
+                        xMax: priceHistoryData?.labels?.[priceHistoryData.labels.length - 1] || null, // Primera etiqueta de predicción
+                        backgroundColor: "rgba(238, 139, 139, 0.3)", // Color gris semi-transparente
+                        borderColor: "rgba(0, 0, 0, 0.5)", // Color del borde del área
+                        borderWidth: 1, // Ancho del borde                    
+                        },
+                },
+            },
+        },
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: "Fecha",
+                },
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: "Precio (CLP)",
+                },
+                beginAtZero: false,
+            },
+        },
+    };
+    
+            
+        
+    
+
+    // Configuración del gráfico de historial de precios
+    const initializePriceHistory = (historialPrecios) => ({
+        labels: historialPrecios.map((item) => item.fecha),
+        datasets: [
+            {
+                label: "Historial de Precios",
+                data: historialPrecios.map((item) => item.precio),
+                borderColor: "rgba(75, 192, 192, 1)", // Color de línea para historial
+                backgroundColor: "rgba(75, 192, 192, 0.1)", // Fondo para historial
+                tension: 0.1,
+                pointBackgroundColor: "black", // Color de puntos
+                pointRadius: 4,
+            },
+        ],
+    });
+
+
+    const combinePriceHistoryWithPredictions = (historialPrecios, predicciones) => {
+
+        // Verifica que ambos sean arrays antes de procesarlos
+        if (!Array.isArray(historialPrecios)) historialPrecios = [];
+        if (!Array.isArray(predicciones)) predicciones = [];
+
+        // Combinar historial de precios y predicciones
+        const combinedData = [
+            ...historialPrecios.map((item) => ({
+                fecha: new Date(item.fecha),
+                precio: item.precio,
+                tipo: "historial",
+            })),
+            ...predicciones.map((prediccion) => ({
+                fecha: new Date(prediccion.fecha_futura),
+                precio: prediccion.precio_futuro,
+                tipo: "prediccion",
+            })),
+        ];
+    
+        // Ordenar por fecha
+        combinedData.sort((a, b) => a.fecha - b.fecha);
+    
+        // Crear etiquetas (labels) y datasets sincronizados
+        const labels = combinedData.map((item) => item.fecha.toISOString().split("T")[0]);
+    
+        const historialData = labels.map((label) => {
+            const item = combinedData.find((data) => data.fecha.toISOString().split("T")[0] === label && data.tipo === "historial");
+            return item ? item.precio : null;
+        });
+    
+        const prediccionData = labels.map((label) => {
+            const item = combinedData.find((data) => data.fecha.toISOString().split("T")[0] === label && data.tipo === "prediccion");
+            return item ? item.precio : null;
+        });
+    
+        // Identificar el último punto del historial y el primero de la predicción
+        const lastHistorialIndex = labels.lastIndexOf(
+            historialData.find((val) => val !== null)
+        );
+        const firstPrediccionIndex = labels.indexOf(
+            prediccionData.find((val) => val !== null)
+        );
+        // Crear el área de conexión entre el último punto del historial y el primero de la predicción
+        const areaData = labels.map((_, index) => {
+            if (index >= lastHistorialIndex && index <= firstPrediccionIndex) {
+                return historialData[index] || prediccionData[index];
+            }
+            return null;
+        });
+    
+        return {
+            labels,
+            datasets: [
+                {
+                    label: "Historial de Precios",
+                    data: historialData,
+                    borderColor: "black",
+                    backgroundColor: "rgba(0, 0, 0, 0.1)",
+                    tension: 0.1,
+                    pointBackgroundColor: "yellow",
+                    pointRadius: 4,
+                },
+                {
+                    label: "Predicción de Precio",
+                    
+                    data: prediccionData,
+                    borderColor: "rgba(255, 99, 132, 1)",
+                    backgroundColor: "rgba(255, 99, 132, 0.3)",
+                    tension: 0.1,
+                    pointBackgroundColor: "rgba(255, 99, 132, 1)",
+                    pointRadius: 5,
+                    borderDash: [5, 5],
+                },
+            ],
+            options: {
+                plugins: {
+                    legend: {
+                        display: true,
+                        align: "end", // Mueve las leyendas hacia la derecha
+                        labels: {
+                            filter: (legendItem) => legendItem.text !== "Conexión", // Oculta la leyenda de "Conexión"
+                        },
+                    },
+                },
+            },
+        };
+        
+        
+        
+    };
+    
+    
+
+
+
 
 
     const handlePurchase = (link) => {
@@ -205,29 +424,21 @@ function ProductDetails() {
 
     if (!producto) return <Typography variant="h6" align="center">Cargando producto...</Typography>;
 
-    // Configuración del gráfico de historial de precios
-    const priceHistoryData = {
-        labels: producto.historial_precios?.map((precio) => precio.fecha) || [],
-        datasets: [
-            {
-                label: 'Precio',
-                data: producto.historial_precios?.map((precio) => precio.precio) || [],
-                fill: false,
-                borderColor: 'rgba(75, 192, 192, 1)',
-                tension: 0.1,
-                pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                pointBorderColor: 'rgba(255, 99, 132, 1)',
-                pointRadius: 4,
-            },
-        ],
-    };
+
+        
+    
+      
+
+
+
+
 
     // Definir las variables para el cálculo de descuento o aumento
     // Calcular el último precio en el historial de precios y el cambio porcentual
     const lastPrice = producto.historial_precios?.length
     ? producto.historial_precios
           .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-          .at(-2)?.precio//Prnultimo precio del array historial
+          .at(-3)?.precio//Prnultimo precio del array historial
     : null;
 
     //formula para calcular el porcentaje de cambio respoecto al penultimo precio
@@ -263,35 +474,11 @@ function ProductDetails() {
 
     };
 
-    // Definición de las opciones del gráfico `priceHistoryOptions`
-    const priceHistoryOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context) => `Precio: $${context.raw.toLocaleString('es-CL')}`
-                }
-            }
-        },
-        scales: {
-            x: {
-                title: {
-                    display: true,
-                    text: 'Fecha'
-                }
-            },
-            y: {
-                title: {
-                    display: true,
-                    text: 'Precio (CLP)'
-                },
-                beginAtZero: false
-            }
-        }
-    };
+
+    
+    
+    
+    
 
     // Configuración del carrusel para categorías y marcas
     const carouselSettings = {
@@ -679,10 +866,23 @@ function ProductDetails() {
 
 
             {/* Historial de precios */}
-            <Paper elevation={4} sx={{ mt: 4, p: 2, width: '100%' }}>
-                <Typography variant="h6" gutterBottom>Historial de Precios</Typography>
-                <Line data={priceHistoryData} options={priceHistoryOptions} height={100} width={400} />
+            <Paper elevation={4} sx={{ mt: 4, p: 2, width: "100%" }}>
+                <Typography variant="h6" gutterBottom>
+                    Historial de Precios
+                </Typography>
+                {priceHistoryData ? (
+                    <Line data={priceHistoryData} options={priceHistoryOptions} height={100} width={400} />
+                ) : (
+                    <Typography variant="body2">Cargando datos del historial de precios...</Typography>
+                )}
             </Paper>
+
+
+
+
+
+
+            
 
             {/* Comparación con productos similares */}
             <Paper elevation={4} sx={{ p: 2, mt: 4, mb: 5, borderRadius: 6, width: '100%' }}>
@@ -784,7 +984,6 @@ function ProductDetails() {
                 </TableHead>
                 <TableBody>
                     {[
-                    { label: 'Opiniones', key: 'opiniones' },
                     { label: 'Precio', key: 'precio_actual', format: (val) => `$${val?.toLocaleString('es-CL')}` },
                     { label: 'Marca', key: 'marca' },
                     { label: 'Modelo', key: 'modelo' },

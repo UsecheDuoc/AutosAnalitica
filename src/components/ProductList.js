@@ -89,7 +89,7 @@
         }, []);
 
 
-
+        //AQUIII
         useEffect(() => {
             if (selectedFilters.marca) {
                 console.log("Marca seleccionada:", selectedFilters.marca);
@@ -285,8 +285,21 @@
                 const data = response;
                 console.log("Modelos recibidos:", data);
 
-                setModelosDisponibles(response); // Actualiza el estado con los modelos únicos
-                console.log("Modelos disponibles para la marca:", response);
+
+
+                // Eliminar duplicados en un solo recorrido
+                const uniqueData = [];
+                const seen = new Set();
+                for (const modelo of data) {
+                    if (!seen.has(modelo)) {
+                        uniqueData.push(modelo);
+                        seen.add(modelo);
+                    }
+                }
+
+                setModelosDisponibles(uniqueData); // Actualiza el estado con los modelos únicos
+                console.log("Modelos únicos disponibles para la marca:", uniqueData);
+
 
 
 
@@ -694,6 +707,7 @@
                                 },
                             }}
                             >
+
                             {/* Opciones del Select */}
                             {Array.isArray(modelosDisponibles) && modelosDisponibles.length > 0 ? (
                                 modelosDisponibles.map((modelo, index) => (
@@ -942,6 +956,7 @@
 
                    {/* Sección de Suscripción */}
                     <Box
+                        id="suscripcion"
                         sx={{
                             position: 'absolute',
                             top: 0,

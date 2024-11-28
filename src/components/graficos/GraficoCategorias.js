@@ -44,6 +44,8 @@ const GraficoCategorias = () => {
   return (
     <div className="flex justify-center items-center flex-col w-full">
       {data.length > 0 ? (
+        <>
+        {/* Gráfico de barras */}
         <ResponsiveContainer width="100%" height={500}>
           <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
             <XAxis
@@ -58,6 +60,15 @@ const GraficoCategorias = () => {
             <Bar dataKey="value" fill="#8884d8" />
           </BarChart>
         </ResponsiveContainer>
+
+          {/* Texto debajo del gráfico */}
+          <p className="text-gray-600 text-center mt-4">
+            Este gráfico muestra la distribución de productos por empresa de procedencia.
+
+          
+          </p>
+        </>
+
       ) : (
         <p>Cargando categorías...</p>
       )}

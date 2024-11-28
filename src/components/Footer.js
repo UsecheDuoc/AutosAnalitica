@@ -9,6 +9,7 @@ const categories = [
   { name: 'Inicio', id: 'inicio' },
   { name: 'Categorías', id: 'categorias' },
   { name: 'Dashboard', href: '/graficos' }, // Incluye el href aquí
+  { name: 'Suscripción', id: 'suscripcion' },
 ];
 
 function Footer() {
@@ -123,19 +124,9 @@ function Footer() {
             Te enviaremos notificaciones.
           </Typography>
           <Box display="flex">
-            <TextField
-              placeholder="Tu correo electrónico"
-              variant="outlined"
-              size="small"
-              sx={{
-                flexGrow: 1,
-                bgcolor: "white",
-                borderRadius: "4px 0 0 4px",
-                input: { py: 1.5, px: 2 },
-              }}
-            />
             <Button
               variant="contained"
+              //onClick={() => handleNavigation(null, Suscripcion.id)}
               sx={{
                 backgroundColor: '#FFCC00', // Color naranja para resaltar
                 color: 'black',

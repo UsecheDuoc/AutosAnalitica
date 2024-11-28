@@ -48,36 +48,52 @@ const GraficoClustering = () => {
 
     return (
         <Box     
-        sx={{
-            backgroundColor: "white",
-            boxShadow: 3,
-            borderRadius: 2,
-            p: 2,
-            maxWidth: "100%", // Limita el ancho
-            height: "auto",
-            display: "flex",
-            justifyContent: "center", // Centra el contenido
-        }}
-    >
+            sx={{
+                backgroundColor: "white",
+                boxShadow: 3,
+                borderRadius: 2,
+                p: 4,
+                maxWidth: "100%", // Limita el ancho
+                height: "auto",
+                display: "flex",
+                flexDirection: "column", // Alinea contenido verticalmente
+                alignItems: "center", // Centra el contenido
+            }}
+        >
+            {/* Gráfico 3D */}
             {datos.length > 0 ? (
-                <Plot
-                    data={[trace]} // Datos para el gráfico
-                    layout={{
-                        title: "Clustering en 3D",
-                        scene: {
-                            xaxis: { title: "Precio" },
-                            yaxis: { title: "Categoría" },
-                            zaxis: { title: "Marca" },
-                        },
-                        height: 500, // Ajusta la altura
-                        width: 400,  // Ajusta el ancho para que sea proporcional
-                    }}
-                />
+                    <Plot
+                        data={[trace]}
+                        layout={{
+                            title: "Clustering en 3D",
+                            scene: {
+                                xaxis: { title: "Precio" },
+                                yaxis: { title: "Categoría" },
+                                zaxis: { title: "Marca" },
+                            },
+                            margin: { l: 0, r: 0, t: 30, b: 0 }, // Reduce márgenes para maximizar el espacio
+                            height: 600, // Aumenta la altura del gráfico
+                            width: "100%", // Ocupa todo el ancho del contenedor
+                        }}
+                        useResizeHandler
+                        style={{ width: "100%", height: "100%" }} // Hace que el gráfico sea responsivo
+                    />
             ) : (
                 <Typography variant="body1" align="center">
                     No se encontraron datos.
                 </Typography>
             )}
+
+
+            {/* Texto explicativo del gráfico */}
+            <Typography variant="body1" sx={{ mb: 3, color: "gray", textAlign: "center" }}>
+                Este gráfico muestra la agrupación de productos en función de su precio, categoría y marca.
+            
+            
+            
+            
+            
+            </Typography>
         </Box>
     );
 };

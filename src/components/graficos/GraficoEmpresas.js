@@ -49,23 +49,34 @@ const GraficoEmpresas = () => {
   }, []);
 
   return (
-    <div className="flex justify-center items-center flex-col w-full">
+    <div className="flex flex-col justify-center items-center w-full p-4 bg-white shadow-lg rounded-lg" style={{ minHeight: "600px", height: "auto" }}>
       {error ? (
         <p className="text-red-500">{error}</p>
       ) : data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
-            <XAxis dataKey="empresa" angle={-45} textAnchor="end" interval={0} />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="cantidad" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
+        <>
+          {/* Gráfico de barras */}
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+              <XAxis dataKey="empresa" angle={-45} textAnchor="end" interval={0} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="cantidad" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Texto debajo del gráfico */}
+          <p className="text-gray-600 text-center mt-4">
+            Este gráfico muestra la distribución de productos por empresa de procedencia.
+
+          
+          </p>
+        </>
       ) : (
         <p>Cargando datos...</p>
       )}
     </div>
   );
+
 };
 
 export default GraficoEmpresas;
