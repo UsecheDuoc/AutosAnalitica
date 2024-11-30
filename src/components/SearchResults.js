@@ -1,7 +1,7 @@
 // src/components/SearchResults.js
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Container, Typography, Grid, Card, CardMedia, CardContent,Checkbox, Box, Select, MenuItem, FormControl, InputLabel, Button, Pagination, Paper, Modal } from '@mui/material';
+import { Container, Typography, Grid, Card, CardMedia, CardContent,Checkbox, Box, Select, MenuItem, FormControl, InputLabel, Button, Pagination, Paper, Modal,IconButton } from '@mui/material';
 import axios from 'axios';
 import { Link } from 'react-router-dom';  // Asegúrate de importar Link
 import config from '../config';
@@ -10,6 +10,8 @@ import { Breadcrumbs } from '@mui/material';
 import { CATEGORIES } from "../constants";
 import { fetchWithFallback } from "../utils/api"; //URL de utils en componentes principales
 import { tienda } from "../constants";
+import MenuIcon from '@mui/icons-material/Menu';
+import Collapse from '@mui/material/Collapse';
 
 function useQuery() {
     const location = useLocation(); // Obtenemos la ubicación actual
@@ -42,11 +44,12 @@ function SearchResults() {
     const [errorMessage, setErrorMessage] = useState(null); // Mensaje de error
     const [filtros, setFiltros] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [open, setOpen] = useState(false);
 
     // Llama a applyFilters cada vez que cambie un filtro
     useEffect(() => {
         applyFilters();
-    }, [searchTerm, brandFilter, modelFilter, discountFilter, storeFilter, categoryFilter, sortOrder]);
+    }, [searchTerm, brandFilter, modelFilter, discountFilter, storeFilter, categoryFilter]);
     
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -67,17 +70,36 @@ function SearchResults() {
         applyFilters();
     }, [location.search]);
 
+    //Efecto para llamar los modelos por marca
+    useEffect(() => {
+        if (brandFilter) {
+            console.log('Efecto disparado: buscando modelos para la marca:', brandFilter);
+            fetchModelosPorMarca(brandFilter);
+        } else {
+            setModelosDisponibles([]); // Limpia modelos si no hay marca seleccionada
+        }
+    }, [brandFilter]);
 
     //Importar las marcas desde mi constants.js
     useEffect(() => {
         setMarcas(initialMarcas);
+        //console.warn("Marcas iniciales cargadas:", initialMarcas); // Verifica que contiene datos
+
     }, []);
 
+    //Efecto que llama al orden de productos
+    useEffect(() => {
+        if (productos.length > 0) {
+            const sorted = sortProducts(productos); // Ordena los productos
+            setProductos(sorted); // Actualiza el estado con los productos ordenados
+        }
+    }, [sortOrder]); // Ejecuta el efecto cuando cambia sortOrder
+    
 
     //Funcion QUE LLAMA A LA API CON LOS FILTROS QUE VIENEN DEL HOME O LA BUSQUEDA DE LA BARRA
     //NO MODIFICAR A MENOS QUE SEPA QUE HACE
     const fetchProducts = async (params) => {
-        //setIsLoading(true); // Inicia el estado de carga
+        setIsLoading(true); // Inicia el estado de carga
 
         if (!params.marca && !params.modelo && !params.categoria && !params.nombre) {
             console.log("No hay parámetros válidos para ejecutar fetchProducts.");
@@ -104,6 +126,8 @@ function SearchResults() {
             setErrorMessage(error.response?.message || "No se encontraron productos que coincidan con la búsqueda.");
         
             
+        } finally {
+            setIsLoading(false); // Finaliza el estado de carga
         };
     };
     
@@ -123,6 +147,25 @@ function SearchResults() {
         fetchInitialProducts();
     };
 
+    //Para el ordenamiento
+    const sortProducts = (products) => {
+        let sortedProducts = [...products]; // Crea una copia para evitar mutaciones
+        if (sortOrder === 'priceAsc') {
+            sortedProducts.sort((a, b) => a.precio_actual - b.precio_actual);
+            console.log('aplico orden por precio')
+        } else if (sortOrder === 'priceDesc') {
+            sortedProducts.sort((a, b) => b.precio_actual - a.precio_actual);
+            console.log('aplico orden por precio')
+        } else if (sortOrder === 'nameAsc') {
+            sortedProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            console.log('aplico orden por letras')
+        } else if (sortOrder === 'nameDesc') {
+            sortedProducts.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            console.log('aplico orden por letras')
+        }
+        return sortedProducts;
+    };
+
     const fetchInitialProducts = () => {
         if (location.pathname.includes('/marca/')) {
             fetchProductosPorMarca(categoryName); // Si es búsqueda por marca
@@ -138,14 +181,17 @@ function SearchResults() {
         //setIsLoading(true); // Inicia el estado de carga
 
         try {
-            const response = await fetchWithFallback(`/productos/marca`, { params: { nombre: nombreMarca } });
-            setProductos(response.data);
-            if (response.data.length === 0) {
+            const response = await fetchWithFallback(`/productos/marca?nombre=${encodeURIComponent(nombreMarca)}`);
+            //const productos = await fetchWithFallback(`/productos/marca?nombre=${encodeURIComponent(nombreMarca)}`);
+
+            setProductos(response);
+            if (response.length === 0) {
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
                 setProductos([]); // Limpia los productos si la respuesta está vacía
             } else {
+                console.warn('Modelos',response)
                 setErrorMessage(null); // Limpia cualquier mensaje de error si hay resultados
-                setProductos(response.data);
+                setProductos(response);
             }
         } catch (error) {
             console.error("Error al obtener productos por marca:", error);
@@ -181,20 +227,24 @@ function SearchResults() {
     const handleBrandChange = async (event) => {
         const selectedBrand = event.target.value;
         setBrandFilter(selectedBrand);
+        console.warn('Entro a handleBrandChange')
+
         setModelFilter(''); // Reinicia el filtro de modelo cuando cambia la marca
         fetchModelosPorMarca(selectedBrand); // Carga los modelos basados en la marca seleccionada
+        console.warn(selectedBrand)
         // Llama a la API para obtener los modelos de la marca seleccionada
         if (selectedBrand) {
+            console.warn('Seleccionaste la marca:', selectedBrand);
             try {
-                const response = fetchWithFallback(`/productos/modelos`, { params: { marca: selectedBrand } });
-                const modelos = response;
-                setModelosDisponibles(response);
+                // Llama a la función para buscar modelos
+                const response = await fetchModelosPorMarca(selectedBrand); 
+                setModelosDisponibles(response); // Actualiza modelos disponibles
             } catch (error) {
                 console.error("Error al obtener modelos:", error);
-                setModelosDisponibles([]); // Limpiar modelos en caso de error
+                setModelosDisponibles([]); // Limpia los modelos en caso de error
             }
         } else {
-            setModelosDisponibles([]); // Limpiar modelos si no hay marca seleccionada
+            setModelosDisponibles([]); // Limpia los modelos si no hay marca seleccionada
         }
     
         applyFilters(); // Aplicar filtros después de seleccionar la marca
@@ -202,7 +252,7 @@ function SearchResults() {
     
     const handleModelChange = (event) => {
         setModelFilter(event.target.value);
-        applyFilters(); // Llama a applyFilters después de actualizar el filtro de modelo
+        //applyFilters(); // Llama a applyFilters después de actualizar el filtro de modelo
     };
     
     const handleDiscountChange = (event) => {
@@ -221,22 +271,25 @@ function SearchResults() {
     };
     
     const handleSortChange = (event) => setSortOrder(event.target.value);
-
     
     const fetchModelosPorMarca = async (marca) => {
         //setIsLoading(true); // Inicia el estado de carga
+        console.warn('Entro a fetchModelosPorMarca')
 
         try {
-            if (!marca) {
-                setModelosDisponibles([]);
-                return;
-            }
-            const response = await fetchWithFallback(`/productos/modelos`, { params: { marca } });
-            
+            const response = await fetchWithFallback(`/productos/modelos?marca=${encodeURIComponent(marca)}`);
+            console.warn('Modelos que recibo: ',response)
             // Filtra los modelos únicos
-            const modelosUnicos = [...new Set(response.data.map((producto) => producto.modelo))];
+            //const modelosUnicos = [...new Set(response.map((producto) => producto.modelo))];
             
-            setModelosDisponibles(modelosUnicos); // Establece los modelos disponibles
+            if (response && Array.isArray(response)) {
+                console.warn('Los envioooo')
+
+                setModelosDisponibles(response); // Asegúrate de actualizar el estado aquí
+            } else {
+                console.error('La respuesta de modelos no es válida:', response);
+                setModelosDisponibles([]); // Limpia los modelos si la respuesta es inválida
+            }
         } catch (error) {
             console.error("Error al obtener modelos:", error);
             setModelosDisponibles([]); // En caso de error, establece modelos como vacío
@@ -276,7 +329,7 @@ function SearchResults() {
             categoria: categoryFilter || undefined,
             descuento: discountFilter || undefined,
             tienda: storeFilter || undefined,
-            sortOrder: sortOrder || undefined,
+
         };
 
         // Verifica si hay parámetros válidos
@@ -421,149 +474,163 @@ function SearchResults() {
                     </Box>
 
 
-
+            {/* Contenedor en dos columnas para filtros y productos */}
             <Grid container spacing={3}>
-                
-                {/* Filtros en el lado izquierdo */}
+                {/* Columna de filtros */}
                 <Grid item xs={12} md={3}>
-                    <Paper elevation={3} sx={{ p: 2, bgcolor: '#f9f9f9' }}>
-                        {/* Encabezado de Filtros con enlace para limpiar */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">Filtros</Typography>
-                            <Typography
-                                variant="body2"
-                                color="primary"
-                                sx={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                onClick={resetFilters}
-                            >
-                                Limpiar Filtros
-                            </Typography>
-                        </Box>
+                    <Box sx={{ mb: 2 }}>
+                        {/* Botón de hamburguesa */}
+                        <IconButton 
+                            onClick={() => setOpen(!open)} 
+                            sx={{ display: { xs: 'block', md: 'none' } }} // Solo visible en dispositivos pequeños
+                            color="primary"
+                        >
+                            <MenuIcon />
+                        </IconButton>
 
-                        {/* Filtro por Marca */}
-                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                            <InputLabel>Marca</InputLabel>
-                                <Select 
-                                    value={brandFilter} 
-                                    onChange={(event) => 
-                                        setBrandFilter(event.target.value)} 
-                                        label="Marca"
-                                    >
-                                    <MenuItem value="">Ninguno</MenuItem>
-                                    {marcas && marcas.length > 0 ? (
-                                        marcas.map((marca, index) => (
-                                            <MenuItem key={index} value={marca}>
-                                                {marca}
+
+
+                        {/* Contenedor colapsable de filtros */}
+                        <Collapse in={open || window.innerWidth >= 960} timeout="auto" unmountOnExit>
+                        
+
+                        <Paper elevation={3} sx={{ p: 2, bgcolor: '#f9f9f9' }}>
+                            {/* Encabezado de Filtros con enlace para limpiar */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Filtros</Typography>
+                                <Typography
+                                    variant="body2"
+                                    color="primary"
+                                    sx={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                    onClick={resetFilters}
+                                >
+                                    Limpiar Filtros
+                                </Typography>
+                            </Box>
+
+                            {/* Filtro por Marca */}
+                            <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                                <InputLabel>Marca</InputLabel>
+                                    <Select 
+                                        value={brandFilter} 
+                                        onChange={(event) => 
+                                            setBrandFilter(event.target.value)} 
+                                            label="Marca"
+                                        >
+                                        <MenuItem value="">Ninguno</MenuItem>
+                                        {marcas && marcas.length > 0 ? (
+                                            marcas.map((marca, index) => (
+                                                <MenuItem key={index} value={marca}>
+                                                    {marca}
+                                                </MenuItem>
+                                            ))
+                                        ) : (
+                                            <MenuItem disabled>Cargando marcas...</MenuItem>
+                                        )}
+                                    </Select>
+                            </FormControl>
+
+
+                            {/* Filtro por Modelo */}
+                            <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                                <InputLabel>Modelo</InputLabel>
+                                <Select
+                                    value={modelFilter || ""}
+                                    onChange={handleModelChange}
+                                    disabled={!brandFilter} // Deshabilita si no hay marca seleccionada
+                                    label="Modelo"
+                                >
+                                    {modelosDisponibles && Array.isArray(modelosDisponibles) && modelosDisponibles.length > 0 ? (
+                                        modelosDisponibles.map((modelo, index) => (
+                                            <MenuItem key={index} value={modelo}>
+                                                {modelo}
                                             </MenuItem>
                                         ))
                                     ) : (
-                                        <MenuItem disabled>Cargando marcas...</MenuItem>
+                                        <MenuItem disabled>No hay modelos disponibles</MenuItem>
                                     )}
                                 </Select>
-                        </FormControl>
+                            </FormControl>
 
 
-                        {/* Filtro por Modelo */}
-                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                            <InputLabel>Modelo</InputLabel>
-                            <Select
-                                value={modelFilter || ""}
-                                onChange={(event) => {
-                                    setModelFilter(event.target.value);
-                                }}
-                                disabled={!brandFilter} // Deshabilita si no hay marca seleccionada
-                                label="Modelo"
-
-                            >
-                                {modelosDisponibles.length > 0 ? (
-                                    modelosDisponibles.map((modelo, index) => (
-                                        <MenuItem key={index} value={modelo}>
-                                            {modelo}
-                                        </MenuItem>
-                                    ))
-                                ) : (
-                                    <MenuItem disabled>No hay modelos disponibles</MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
-
-
-                        {/* Filtro por Tienda */}
-                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                            <InputLabel>Tienda</InputLabel>
-                            <Select 
-                                value={storeFilter} 
-                                onChange={(event) => 
-                                    setStoreFilter(event.target.value)} 
-                                    label="tienda"
-                            >
-                                {tienda.map((tienda, index) => (
-                                <MenuItem key={index} value={tienda.alt}>
-                                    {tienda.alt}
-                                </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        {/* Filtro por Categoría */}
-                        <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
-                            <InputLabel>Categoría</InputLabel>
-                            <Select
-                                value={categoryFilter}
-                                onChange={handleCategoryChange}
-                                label="Categoría"
-                            >
-                                {CATEGORIES.map((category, index) => (
-                                    <MenuItem key={index} value={category.value}>
-                                        {category.label}
+                            {/* Filtro por Tienda */}
+                            <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                                <InputLabel>Tienda</InputLabel>
+                                <Select 
+                                    value={storeFilter} 
+                                    onChange={(event) => 
+                                        setStoreFilter(event.target.value)} 
+                                        label="tienda"
+                                >
+                                    {tienda.map((tienda, index) => (
+                                    <MenuItem key={index} value={tienda.alt}>
+                                        {tienda.alt}
                                     </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                                    ))}
+                                </Select>
+                            </FormControl>
 
-                        {/* Botón de comparar o mostrar comparación */}
-                        {compareMode ? (
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                fullWidth
-                                sx={{ mt: 2,
-                                    backgroundColor: '#FFCC00', // Color naranja para resaltar
-                                    color: 'black',
-                                 }}
-                                onClick={handleShowComparison}
-                                disabled={selectedProducts.length < 2} // Habilita el botón si hay al menos 2 productos seleccionados
-                            >
-                                Mostrar Comparación
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                fullWidth
-                                sx={{ 
-                                    mt: 2,
-                                    backgroundColor: '#FFCC00', // Color naranja para resaltar
-                                    color: 'black',
-                                 }}
-                                onClick={handleCompareToggle}
-                            >
-                                Comparar productos
-                            </Button>
-                        )}
+                            {/* Filtro por Categoría */}
+                            <FormControl variant="outlined" fullWidth sx={{ mb: 2 }}>
+                                <InputLabel>Categoría</InputLabel>
+                                <Select
+                                    value={categoryFilter}
+                                    onChange={handleCategoryChange}
+                                    label="Categoría"
+                                >
+                                    {CATEGORIES.map((category, index) => (
+                                        <MenuItem key={index} value={category.value}>
+                                            {category.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
 
-                        {/* Enlace para cancelar comparación */}
-                        {compareMode && (
-                            <Typography
-                                variant="body2"
-                                color="primary"
-                                sx={{ mt: 1, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}
-                                onClick={handleCompareToggle}
-                            >
-                                Cancelar comparación
-                            </Typography>
-                        )}
-                    </Paper>
+                            {/* Botón de comparar o mostrar comparación */}
+                            {compareMode ? (
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    fullWidth
+                                    sx={{ mt: 2,
+                                        backgroundColor: '#FFCC00', // Color naranja para resaltar
+                                        color: 'black',
+                                    }}
+                                    onClick={handleShowComparison}
+                                    disabled={selectedProducts.length < 2} // Habilita el botón si hay al menos 2 productos seleccionados
+                                >
+                                    Mostrar Comparación
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    fullWidth
+                                    sx={{ 
+                                        mt: 2,
+                                        backgroundColor: '#FFCC00', // Color naranja para resaltar
+                                        color: 'black',
+                                    }}
+                                    onClick={handleCompareToggle}
+                                >
+                                    Comparar productos
+                                </Button>
+                            )}
+
+                            {/* Enlace para cancelar comparación */}
+                            {compareMode && (
+                                <Typography
+                                    variant="body2"
+                                    color="primary"
+                                    sx={{ mt: 1, cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}
+                                    onClick={handleCompareToggle}
+                                >
+                                    Cancelar comparación
+                                </Typography>
+                            )}
+                        </Paper>
+                        </Collapse>
+                        </Box>
                 </Grid>
 
                 {/* Columna de productos y ordenación */}
@@ -600,7 +667,7 @@ function SearchResults() {
                     <>
                     {/* Listado de productos */}
                     <Grid container spacing={3}>
-                    {Array.isArray(productos) && productos.length > 0 ? (
+                    {Array.isArray(paginatedProducts) && paginatedProducts.length > 0 ? (
                             paginatedProducts.map((producto) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
                                     <Card
@@ -876,6 +943,7 @@ function SearchResults() {
                     </Grid>
                 </Box>
             </Modal>
+
         </Container>
     );
 }

@@ -1,7 +1,7 @@
     // src/components/ProductList.js
     import React, { useState, useEffect, useContext } from 'react';
     import axios from 'axios';
-    import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button,IconButton, Pagination, Select, MenuItem,TextField,CircularProgress  } from '@mui/material';
+    import { Box, Container, Typography, Grid, Card, CardMedia, CardContent, Button,IconButton, Pagination, Select, MenuItem,TextField,CircularProgress,Snackbar   } from '@mui/material';
     import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
     import "slick-carousel/slick/slick.css";
     import "slick-carousel/slick/slick-theme.css";
@@ -69,6 +69,9 @@
         const [selectedMarca, setSelectedMarca] = React.useState('');
         const [productosDestacados, setProductosDestacados] = useState([]);
         const [uniqueData, setuniqueData] = useState([]);
+        const [isSearchLoading, setIsSearchLoading] = useState(false);
+        const [searchErrorMessage, setSearchErrorMessage] = useState('');
+        const [openSnackbar, setOpenSnackbar] = useState(false);
 
 
 
@@ -77,7 +80,6 @@
             modelo: '',
             categoria: '',
         });
-
 
         //Importamos las marcas desde mi constants.js
         useEffect(() => {
@@ -104,9 +106,7 @@
             selectedFilters.modelo ||
             selectedFilters.categoria
         );
-        
-        
-
+              
         //Control de errores
         const fetchProductos = async () => {
             try {
@@ -263,9 +263,7 @@
             const marcaSeleccionada = InicioMarcas.find((marca) => marca.nombre === nombreMarca);
             navigate(`/marca/${nombreMarca}`, { state: { imageUrl: marcaSeleccionada?.imageUrl } });
         };
-
-
-
+    
         const handleFilterChange = (filtro, valor) => {
             const searchParams = new URLSearchParams();
 
@@ -310,18 +308,7 @@
             }
         };
 
-        const applyFilters = () => {
-            const params = {};
-            if (selectedFilters.marca) params.marca = selectedFilters.marca;
-            if (selectedFilters.modelo) params.modelo = selectedFilters.modelo;
-            if (selectedFilters.categoria) params.categoria = selectedFilters.categoria;
-
-            fetchWithFallback(`/productos/`, { params })
-                .then((response) => setProductos(response.data))
-                .catch((error) => console.error("Error al aplicar filtros:", error));
-        };
-
-        const handleSearch = () => {
+        const handleSearch = async () => {
             const { marca, modelo, categoria } = selectedFilters;        
             const params = {
                 ...(marca && { marca }),
@@ -329,24 +316,35 @@
                 ...(categoria && { categoria }),
             };
         
-            fetchWithFallback(`/productos`, { params })
-            .then((response) => {
-                console.log("Resultados de búsqueda:", response.data);
-                setProductos(response.data); // Actualiza los productos en el estado
-                // Construye la URL con los parámetros para la redirección
-                const searchParams = new URLSearchParams(params).toString();
-                console.log('Aplique estos filtros desde productLists.js',{searchParams})
+            try {
+                setIsSearchLoading(true); // Inicia el estado de carga
+                setSearchErrorMessage(''); // Limpia cualquier mensaje de error previo
 
+                const response = await fetchWithFallback(
+                    `/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}`
+                );
+
+            //fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}`)
+            //const productos = await fetchWithFallback(`/productos/categoria?categoria=${encodeURIComponent(nombreCategoria)}`);
+            //fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`)
+
+                console.log("Resultados de búsqueda:", response);
+                setProductos(response); // Actualiza los productos en el estado
+        
+                const searchParams = new URLSearchParams(params).toString();
+                console.log('Apliqué estos filtros desde productLists.js', { searchParams });
+        
                 navigate(`/search?${searchParams}`); // Redirige a SearchResults con los parámetros de búsqueda
-            })
-            .catch((error) => {
+            } catch (error) {
                 console.error("Error al realizar la búsqueda:", error.message);
-                if (error.response) {
-                    console.error("Detalles del error del servidor:", error.response.data);
-                } else {
-                    console.error("Error sin respuesta del servidor");
-                }
-            });
+                let message = '';
+
+                // Si la respuesta indica que no hay resultados
+                setSearchErrorMessage(message ="No se encontraron resultados que coincidan con la búsqueda.");
+                setOpenSnackbar(true); // Abre el Snackbar
+            } finally {
+                setIsSearchLoading(false); // Finaliza el estado de carga
+            }
         };
         
         const renderModelosOptions = () => {
@@ -396,7 +394,6 @@
             return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
         };
     
-
 
         //VALIDACION DE CORREO ELECTRONICO EN SUSCRIPCION
         const [FiltersSub, setSubFilters] = React.useState({
@@ -471,7 +468,12 @@
         }
         };
 
-
+        //Para cerrar el mensaje flotante
+        const handleSnackbarClose = () => {
+            setOpenSnackbar(false);
+            setSearchErrorMessage(''); // Limpia el mensaje de error
+        };
+        
         
         
         return (
@@ -530,6 +532,22 @@
                             zIndex: 1,
                         }}
                     />
+
+    {/* Snackbar posicionado sobre la imagen */}
+    <Snackbar
+        open={Boolean(searchErrorMessage)}
+        autoHideDuration={6000}
+        onClose={() => setSearchErrorMessage('')}
+        message={searchErrorMessage || 'No se encontraron resultados que coincidan con la búsqueda.'}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+            position: 'absolute',
+            top: '20px',  // Ajusta la distancia desde el top para que no se solape con otros elementos
+            zIndex: 2, // Asegura que el Snackbar esté sobre la imagen
+        }}
+    />
+
+
 
                     {/* Overlay oscuro para mejorar la visibilidad del texto */}
                     <Box
@@ -777,8 +795,8 @@
                                 },
                             }}
                             >
-                            Buscar
-                            </Button>
+                            {isSearchLoading ? <CircularProgress size={24} /> : 'Buscar'} {/* Spinner durante la carga */}
+                        </Button>
                         </Box>
                         </Box>
                     </Box>
@@ -834,6 +852,8 @@
                                                     objectFit: 'contain', // Asegura que la imagen se ajuste sin recortes
                                                 }}
                                             />
+
+                                            
                                         </Box>
                                         <CardContent 
                                                 sx={{
@@ -1421,9 +1441,31 @@
                                 </Grid>
                             ))}
                         </Grid>
+                        
                     </Box>
+        {/* Snackbar para mensajes de error */}
+        <Snackbar
+            open={openSnackbar}
+            autoHideDuration={4000} // El mensaje desaparece automáticamente tras 4 segundos
+            onClose={handleSnackbarClose} // Función para cerrar el Snackbar
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Posición del mensaje
+        >
+            <Box
+                sx={{
+                    backgroundColor: '#f8d7da', // Fondo rojo claro para indicar error
+                    color: '#721c24', // Texto rojo oscuro
+                    padding: '16px',
+                    borderRadius: '8px',
+                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)', // Sombra para destacar el mensaje
+                    textAlign: 'center',
+                }}
+            >
+                {searchErrorMessage} {/* Aquí aparece el mensaje dinámico de error */}
+            </Box>
+        </Snackbar>
 
-            </Container>
+
+    </Container>
         );
     }
 

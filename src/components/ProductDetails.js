@@ -1032,7 +1032,8 @@ function ProductDetails() {
                             autoplay={true} // Activamos el desplazamiento automático
                             autoplaySpeed={2000} // Intervalo de 2 segundos
                         >
-                            {productosDestacados.map((producto, index) => (
+                        {Array.isArray(productosDestacados) && productosDestacados.length > 0 ? (
+                            productosDestacados?.map((producto, index) => (
                                 <div key={index} className="px-2">
                                     <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                         {/* Enlace al ProductDetails.js con el ID */}
@@ -1074,7 +1075,12 @@ function ProductDetails() {
                                         </div>
                                     </Link>
                                 </div>
-                            ))}
+                                ))
+                            ) : (
+                                <Typography variant="body2" color="textSecondary" align="center">
+                                    No hay productos destacados disponiblessss.
+                                </Typography>
+                            )}
                         </Slider>
                         </div>
             </Box>

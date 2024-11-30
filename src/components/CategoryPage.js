@@ -50,11 +50,14 @@ function CategoryPage() {
     const [filtersOpen, setFiltersOpen] = useState(false); // Estado para el colapso
     const [open, setOpen] = useState(false);
     const [error, setError] = useState(null);
-    const paginatedProducts = productos.slice((page - 1) * productsPerPage, page * productsPerPage);
+    //const paginatedProducts = productos.slice((page - 1) * productsPerPage, page * productsPerPage);
+    //console.warn('Lo que tiene:',paginatedProducts)
     const [isLoading, setIsLoading] = useState(false);
-
+    const [counter, setCounter] = useState(0); // Estado para contar las ejecuciones del efecto
+    //console.log(counter)
     //NUEVO
-   
+
+
     //Comentado para aplicar FilterSection
     const handleModelChange = (event) => {
         setModelFilter(event.target.value);
@@ -63,9 +66,10 @@ function CategoryPage() {
 
 
     const handleDiscountChange = (event) => setDiscountFilter(event.target.value);
+    
     const handleStoreChange = (event) => {
         setStoreFilter(event.target.value);
-        applyFilters(); // Llamar a `applyFilters` cada vez que cambie el filtro de modelo
+        applyFilters(); // Llamar a `applyFilters` cada vez que cambie el filtro 
     };
     // Estado adicional para el filtro de categoría
 
@@ -78,8 +82,11 @@ function CategoryPage() {
     // Nueva función para manejar la carga de modelos basados en la marca seleccionada
     const fetchModelosPorMarca = async (marca) => {
         try {
-            const response = await fetchWithFallback(`/modelos`, { params: { marca } });
-            setModelosDisponibles(response.data); // Cargar los modelos disponibles para la marca seleccionada
+            const response = await fetchWithFallback(`/productos/modelos?marca=${encodeURIComponent(marca)}`);
+            //                const response = await fetchWithFallback(`/productos/modelos?marca=${encodeURIComponent(marca)}`);
+
+            //fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')
+            setModelosDisponibles(response); // Cargar los modelos disponibles para la marca seleccionada
         } catch (error) {
             console.error("Error al obtener modelos:", error);
             setModelosDisponibles([]); // En caso de error, establecer modelos como vacío
@@ -102,7 +109,12 @@ function CategoryPage() {
     };
 
 
-
+    useEffect(() => {
+        if (productos.length > 0) {
+            const sorted = sortProducts(productos); // Ordena los productos
+            setProductos(sorted); // Actualiza el estado con los productos ordenados
+        }
+    }, [sortOrder]); // Ejecuta el efecto cuando cambia sortOrder
     
     
     
@@ -130,10 +142,10 @@ function CategoryPage() {
 
     // useEffect para aplicar filtros cuando se cambian
     useEffect(() => {
-        if (brandFilter || modelFilter || discountFilter || storeFilter || filter || sortOrder) {
+        if (brandFilter || modelFilter || discountFilter || storeFilter || filter ) {
             applyFilters();  // Aplica los filtros activos
         }
-    }, [brandFilter, modelFilter, discountFilter, storeFilter, filter, sortOrder]);
+    }, [brandFilter, modelFilter, discountFilter, storeFilter, filter]);
     
     
     // useEffect para cargar los modelos basados en la marca seleccionada
@@ -147,22 +159,25 @@ function CategoryPage() {
     
 
     useEffect(() => {
-        if (categoryFilter || brandFilter || modelFilter || discountFilter || storeFilter || sortOrder) {
+        if (categoryFilter || brandFilter || modelFilter || discountFilter || storeFilter) {
             applyFilters();  // Aplica los filtros automáticamente cuando cambia `categoryFilter`
         }
-    }, [categoryFilter, brandFilter, modelFilter, discountFilter, storeFilter, sortOrder]);
+    }, [categoryFilter, brandFilter, modelFilter, discountFilter, storeFilter]);
     
 
     
     const pathnames = location.pathname.split('/').filter((x) => x);
 
     //Para los filtros de se aplican desde el home
+    //REVISAR YA QUE ESTA DUPLICADO ABAJO
     useEffect(() => {
+        //console.warn('PRIMER EFECTO')
         const queryParams = new URLSearchParams(location.search);
     
         const marca = queryParams.get('marca') || '';
         const modelo = queryParams.get('modelo') || '';
         const categoria = queryParams.get('categoria') || '';
+        const tienda = queryParams.get('empresa_procedencia') || '';
         const searchParams = new URLSearchParams();
 
         setBrandFilter(marca || "");
@@ -171,7 +186,7 @@ function CategoryPage() {
 
         setCategoryFilter(categoria || "");
     
-        if (marca || modelo || categoria) {
+        if (marca || modelo || categoria ||tienda) {
             applyFilters(); // Solo aplica si hay filtros válidos
         }    
     }, [location.search]);
@@ -198,7 +213,9 @@ function CategoryPage() {
 
 
     //PRUEBA TRAYENDO LA LOGICA DE FILTROS DESDE SEARCHRESULTS:JS
-    useEffect(() => {
+/*     useEffect(() => {
+        console.warn('SEGUNDO EFECTO')
+
         const queryParams = new URLSearchParams(location.search);
     
         const marca = queryParams.get('marca') || '';
@@ -211,15 +228,14 @@ function CategoryPage() {
         setCategoryFilter(categoria || "");
     
         applyFilters();
-    }, [location.search]);
+    }, [location.search]); */
 
-        //Importar las marcas desde mi constants.js
-        useEffect(() => {
-            setMarcas(initialMarcas);
-        }, []);
+
     
         // Leer parámetros de búsqueda desde la URL
         useEffect(() => {
+            //console.warn('TERCER EFECTO')
+
             const searchParams = new URLSearchParams(location.search);
             const marca = searchParams.get("marca") || '';
             const modelo = searchParams.get("modelo") || '';
@@ -227,7 +243,7 @@ function CategoryPage() {
             const searchTerm = searchParams.get('q') || ''; // Para búsquedas por nombre
     
             const descuento = searchParams.get("descuento") || '';
-            const tienda = searchParams.get("tienda") || '';
+            const tienda = searchParams.get('empresa_procedencia') || '';
             const sortOrder = searchParams.get("sortOrder") || '';
     
             // Actualiza los filtros en el estado
@@ -236,7 +252,6 @@ function CategoryPage() {
             setCategoryFilter(categoria);
             setDiscountFilter(descuento);
             setStoreFilter(tienda);
-            setSortOrder(sortOrder);
     
             // Fetch inicial combinando filtros y búsqueda
             const params = {
@@ -255,125 +270,38 @@ function CategoryPage() {
         }, [location.search]);
     
     
-        const fetchProducts = (params) => {
+        const fetchProducts = async (params) => {
+            setIsLoading(true); // Inicia el estado de carga        
+            setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
+
             if (!params.marca && !params.modelo && !params.categoria && !params.nombre&& !params.tienda) {
                 console.log("No hay parámetros válidos para ejecutar fetchProducts.");
                 return;
             }
-            setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
-            fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`)
 
-            .then(response => {
-                console.log('Datos extraidos de la api',response)
+            try {
+                const response = await fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`);
 
+                //fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`)
                 if (!Array.isArray(response) || response.length === 0) {
                     setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
                     setProductos([]);
-                    return;
+                    //return;
+                } else {
+                    setErrorMessage(null); // Limpia cualquier mensaje de error
+                    setProductos(response);
                 }
-                
-                console.log("Productos recibidos:", response);
-                setProductos(response);
-                if (response === 0) {
-                    setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
-                }
-
-
-                
-            })
-            .catch(error => {
+                                
+            } catch (error) {
                 console.error("Error al obtener productos:", error);
-                setErrorMessage(error.response?.message || "No se encontraron productos que coincidan con la búsqueda.");
-            });
+                setErrorMessage(error.response?.message || "Hubo un error al obtener los productos.");
+                setProductos([]); // Limpia los productos en caso de error
+            } finally {
+                setIsLoading(false); // Finaliza el estado de carga
+            }
         };
     
 
-
-
-
-
-
-
-
-
-
-
-
-
-    //CODIGO NUEVO
-    {/*const fetchProducts = () => {
-        // Determinar si se está haciendo una búsqueda por marca o por categoría
-        const searchType = location.pathname.includes('/marca/') ? 'marca' : 'categoria';
-    
-        axios.get(`${config.apiBaseUrl}`, {
-            params: {
-                [searchType]: categoryName, // Buscar por categoría o marca, según corresponda
-                marca: brandFilter || undefined,
-                modelo: modelFilter || undefined,
-                descuento: discountFilter || undefined,
-                tienda: storeFilter || undefined,
-                sortOrder: sortOrder || undefined,
-            }
-        })
-        .then(response => {
-            console.log("Productos recibidos:", response.data);
-            setProductos(response.data);
-            if (response.data.length === 0) {
-                setErrorMessage("No se encontraron productos que coincidan con la búsqueda.");
-            }
-        })
-        .catch(error => {
-            console.error("Error al obtener productos:", error);
-            if (error.response) {
-                // Manejo de errores específicos de la respuesta de la API
-                const status = error.response.status;
-                switch (status) {
-                    case 400:
-                        console.error("Error 400: Solicitud incorrecta");
-                        setErrorMessage("Hubo un problema con tu solicitud. Verifica los datos e inténtalo de nuevo.");
-                        break;
-                    case 401:
-                        console.error("Error 401: No autorizado");
-                        setErrorMessage("No estás autorizado para realizar esta acción.");
-                        break;
-                    case 403:
-                        console.error("Error 403: Acceso denegado");
-                        setErrorMessage("No tienes permiso para acceder a este recurso.");
-                        break;
-                    case 404:
-                        console.error("Error 404: No encontrado");
-                        setErrorMessage("El recurso solicitado no existe. Verifica el enlace o la información proporcionada.");
-                        break;
-                    case 500:
-                        console.error("Error 500: Error interno del servidor");
-                        setErrorMessage("El servidor encontró un problema. Por favor, inténtalo más tarde.");
-                        break;
-                    case 502:
-                        console.error("Error 502: Puerta de enlace incorrecta");
-                        setErrorMessage("Error en la comunicación con el servidor. Por favor, inténtalo nuevamente.");
-                        break;
-                    case 503:
-                        console.error("Error 503: Servicio no disponible");
-                        setErrorMessage("El servicio está temporalmente no disponible. Intenta más tarde.");
-                        break;
-                    case 504:
-                        console.error("Error 504: Tiempo de espera agotado");
-                        setErrorMessage("El servidor tardó demasiado en responder. Por favor, inténtalo de nuevo.");
-                        break;
-                    default:
-                        console.error(`Error ${status}: ${error.message}`);
-                        setErrorMessage("Ocurrió un error inesperado. Intenta más tarde.");
-                        break;
-                    }
-            } else if (error.request) {
-                // Error en la solicitud, pero no hubo respuesta
-                setErrorMessage("No se recibió respuesta del servidor. Verifica tu conexión a internet.");
-            } else {
-                // Error al configurar la solicitud
-                setErrorMessage("Hubo un error al realizar la solicitud. Intenta de nuevo.");
-            }
-        });
-    };*/}
     
     //Efecto para inicializar los filtros en categoty cuando viene de home
     const fetchInitialProducts = () => {
@@ -397,7 +325,6 @@ function CategoryPage() {
             categoria: categoryFilter || undefined,
             descuento: discountFilter || undefined,
             tienda: storeFilter || undefined,
-            sortOrder: sortOrder || undefined,
         };
 
         // Verifica si hay parámetros válidos
@@ -420,23 +347,32 @@ function CategoryPage() {
     };
     
     const fetchProductosPorMarca = async (nombreMarca) => {
-        try {
-            // Usa el endpoint correspondiente con fetchWithFallback
-            const productos = await fetchWithFallback(`/productos/marca?nombre=${encodeURIComponent(nombreMarca)}`);
-            
-            if (productos.length === 0) {
+        console.log('Contador: ',counter)
+        if (counter >= 1) {
+            console.log("Efecto ya ejecutado una vez, no se ejecutará de nuevo.");
+            return; // Salir si el contador supera el límite
+        }else{
+            //console.warn('Entreeeee')
+            // Incrementar el contador después de ejecutar el efecto
+            //setCounter((prev) => prev + 1);
+            try {
+                // Usa el endpoint correspondiente con fetchWithFallback
+                const productos = await fetchWithFallback(`/productos/marca?nombre=${encodeURIComponent(nombreMarca)}`);
+                
+                if (productos.length === 0) {
+                    setErrorMessage("No se encontraron productos para la marca seleccionada.");
+                    setProductos([]); // Limpia el estado si no hay productos
+                  } else {
+                    setErrorMessage(null); // Limpia cualquier mensaje de error
+                    setProductos(productos); // Almacena los productos obtenidos
+                  }
+            } catch (error) {
+                console.error("Error al obtener productos por marca:", error);
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
-                setProductos([]); // Limpia el estado si no hay productos
-              } else {
-                setErrorMessage(null); // Limpia cualquier mensaje de error
-                setProductos(productos); // Almacena los productos obtenidos
-              }
-        } catch (error) {
-            console.error("Error al obtener productos por marca:", error);
-            setErrorMessage("No se encontraron productos para la marca seleccionada.");
+            }
+            };
         }
-    };
-     
+         
     //Seccion de filtros
     const fetchProductosPorCategoria = async (nombreCategoria) => {
         try {
@@ -470,10 +406,31 @@ function CategoryPage() {
     };
 
     const handlePageChange = (event, value) => setPage(value);
-    const handleSortChange = (event) => setSortOrder(event.target.value);
+
+    const handleSortChange = (event) => {
+        setSortOrder(event.target.value); // Actualiza el estado de sortOrder
+    };
+    
     const handleFilterChange = (event) => setFilter(event.target.value);
 
-
+    //Para el ordenamiento
+    const sortProducts = (products) => {
+        let sortedProducts = [...products]; // Crea una copia para evitar mutaciones
+        if (sortOrder === 'priceAsc') {
+            sortedProducts.sort((a, b) => a.precio_actual - b.precio_actual);
+            console.log('aplico orden por precio')
+        } else if (sortOrder === 'priceDesc') {
+            sortedProducts.sort((a, b) => b.precio_actual - a.precio_actual);
+            console.log('aplico orden por precio')
+        } else if (sortOrder === 'nameAsc') {
+            sortedProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            console.log('aplico orden por letras')
+        } else if (sortOrder === 'nameDesc') {
+            sortedProducts.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            console.log('aplico orden por letras')
+        }
+        return sortedProducts;
+    };
 
     //Seccion de comparacion de productos
     const handleSelectProduct = (producto) => {
@@ -527,7 +484,11 @@ function CategoryPage() {
     if (errorMessage) {
         return <Typography variant="h6" align="center" color="error">{errorMessage}</Typography>;
     }*/
-
+    //Funcion para paginado
+    console.log('Productos:   ',productos)
+    const paginatedProducts = Array.isArray(productos)
+    ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
+    : [];
 
     return (
             <Container maxWidth="lg" sx={{ mt: 1 }}>
@@ -785,171 +746,163 @@ function CategoryPage() {
                                     Cancelar comparación
                                 </Typography>
                             )}
-
-
-
                         </Paper>
                         </Collapse>
                         </Box>
                     </Grid>
         
                     {/* Columna de productos y ordenación */}
-                    <Grid item xs={12} md={9}>      
+                    <Grid item xs={12} md={9}>
                     {isLoading ? (
                         <Box
-                        sx={{
-                            mt: 4,
-                            textAlign: 'center',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '50vh', // Ajusta la altura para centrar verticalmente
-                        }}
+                            sx={{
+                                mt: 4,
+                                textAlign: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '50vh', // Centra verticalmente dentro de un contenedor
+                            }}
                         >
-                        <Typography variant="h6">Cargando productos...</Typography>
+                            <Typography variant="h6">Cargando productos...</Typography>
                         </Box>
-                            ) : errorMessage ? (
-                                <Box
-                                sx={{
-                                    mt: 4,
-                                    textAlign: 'center',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    height: '50vh', // Centra verticalmente dentro de un contenedor
-                                }}
-                            >
+                    ) : errorMessage ? (
+                        <Box
+                            sx={{
+                                mt: 4,
+                                textAlign: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '50vh', // Centra verticalmente dentro de un contenedor
+                            }}
+                        >
                             <Typography variant="h6" color="error">
                                 {errorMessage}
                             </Typography>
                         </Box>
                     ) : (
                         <>
-                        {/* Listado de productos */}
-                        <Grid container spacing={3}>
-                        {Array.isArray(paginatedProducts) && paginatedProducts.length > 0 ? (
-                            paginatedProducts.map((producto) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
-                                    <Card
-                                    sx={{
-                                        bgcolor: '#f9f9f9',
-                                        maxWidth: 300,
-                                        boxShadow: selectedProducts.includes(producto) ? '0 0 0 3px #1976d2' : 3, // Contorno azul si está seleccionado
-                                        position: 'relative', // Necesario para posicionar el checkbox
-
-                                        width: '100%',
-                                        height: '100%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'space-between',
-                                        boxShadow: 3,
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                        '&:hover': {
-                                            transform: 'scale(1.05)', // Mantiene el efecto de escala solo en hover
-                                        }
-                                    }}
-                                        onClick={() => !compareMode && navigate(`/product/${producto._id}`)}
-                                    >
-                                    {compareMode && (
-                                            <Checkbox
-                                                checked={selectedProducts.includes(producto)}
-                                                onChange={() => handleSelectProduct(producto)}
-                                                color="primary"
-                                                inputProps={{ 'aria-label': 'select to compare' }}
+                            {/* Listado de productos */}
+                            <Grid container spacing={3}>
+                                {Array.isArray(paginatedProducts) && paginatedProducts.length > 0 ? (
+                                    paginatedProducts.map((producto) => (
+                                        <Grid item xs={12} sm={6} md={4} lg={3} key={producto._id}>
+                                            <Card
                                                 sx={{
-                                                    position: 'absolute',
-                                                    top: 8,
-                                                    right: 8,
-                                                    bgcolor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco semitransparente
-                                                    borderRadius: '50%', // Checkbox circular
-                                                    boxShadow: 1, // Sombra para destacar el checkbox
-                                                    '&.Mui-checked': {
-                                                        color: '#1976d2', // Color al estar seleccionado
+                                                    bgcolor: '#f9f9f9',
+                                                    maxWidth: 300,
+                                                    boxShadow: selectedProducts.includes(producto) ? '0 0 0 3px #1976d2' : 3, // Contorno azul si está seleccionado
+                                                    position: 'relative', // Necesario para posicionar el checkbox
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    justifyContent: 'space-between',
+                                                    boxShadow: 3,
+                                                    cursor: 'pointer',
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    '&:hover': {
+                                                        transform: 'scale(1.05)', // Mantiene el efecto de escala solo en hover
                                                     },
                                                 }}
-                                            />
-                                        )}
-                                        <CardMedia
-                                            component="img"
-                                            height="200"
-                                            width="200"
-                                            image={producto.imagenUrl || 'https://via.placeholder.com/200'}
-                                            alt={producto.nombre}
-                                            sx={{
-                                                objectFit: 'contain', // Ajusta la imagen para que quepa dentro del contenedor sin recortarla
-                                                height: '150px', // Altura específica
-                                                width: '150px', // Anchura específica
-                                                margin: 'auto', // Centra la imagen en su contenedor
-                                                padding: '10px', // Espaciado interno
-                                            }}
-                                        />
-                                        <CardContent>
-                                            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                                {producto.nombre}
-                                            </Typography>
-                                            <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
-                                            {`$${producto.precio_actual.toLocaleString("es-CL")}`}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                <strong>Marca:</strong> {producto.marca || '-'}
-                                            </Typography>
-                                            <Typography variant="body2" >
-                                                <strong>Categoria:</strong> {producto.categoria || '-'}
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    mt: 1, // Margen superior para separación
-                                                }}
+                                                onClick={() => !compareMode && navigate(`/product/${producto._id}`)}
                                             >
-                                                {getStoreLogo(producto.empresa_procedencia) ? (
-                                                    <img
-                                                        src={getStoreLogo(producto.empresa_procedencia)}
-                                                        alt={producto.empresa_procedencia}
-                                                        style={{
-                                                            width: '40px',  // Tamaño ancho del logo
-                                                            height: '50px', // Tamaño alto del logo
-                                                            objectFit: 'contain', // Ajuste para mantener la proporción
-                                                            marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                {compareMode && (
+                                                    <Checkbox
+                                                        checked={selectedProducts.includes(producto)}
+                                                        onChange={() => handleSelectProduct(producto)}
+                                                        color="primary"
+                                                        inputProps={{ 'aria-label': 'select to compare' }}
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            top: 8,
+                                                            right: 8,
+                                                            bgcolor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco semitransparente
+                                                            borderRadius: '50%', // Checkbox circular
+                                                            boxShadow: 1, // Sombra para destacar el checkbox
+                                                            '&.Mui-checked': {
+                                                                color: '#1976d2', // Color al estar seleccionado
+                                                            },
                                                         }}
                                                     />
-                                                ) : (
-                                                    producto.empresa_procedencia || '-'
                                                 )}
-                                                <strong>{producto.empresa_procedencia}</strong>&nbsp;
+                                                <CardMedia
+                                                    component="img"
+                                                    height="200"
+                                                    width="200"
+                                                    image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                                    alt={producto.nombre}
+                                                    sx={{
+                                                        objectFit: 'contain',
+                                                        height: '150px',
+                                                        width: '150px',
+                                                        margin: 'auto',
+                                                        padding: '10px',
+                                                    }}
+                                                />
+                                                <CardContent>
+                                                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                        {producto.nombre}
+                                                    </Typography>
+                                                    <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
+                                                        {`$${producto.precio_actual.toLocaleString("es-CL")}`}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Marca:</strong> {producto.marca || '-'}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        <strong>Categoría:</strong> {producto.categoria || '-'}
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            mt: 1, // Margen superior para separación
+                                                        }}
+                                                    >
+                                                        {getStoreLogo(producto.empresa_procedencia) ? (
+                                                            <img
+                                                                src={getStoreLogo(producto.empresa_procedencia)}
+                                                                alt={producto.empresa_procedencia}
+                                                                style={{
+                                                                    width: '40px', // Tamaño ancho del logo
+                                                                    height: '50px', // Tamaño alto del logo
+                                                                    objectFit: 'contain', // Ajuste para mantener la proporción
+                                                                    marginLeft: '8px', // Espaciado entre "Tienda:" y el logo
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            producto.empresa_procedencia || '-'
+                                                        )}
+                                                        <strong>{producto.empresa_procedencia}</strong>&nbsp;
+                                                    </Typography>
+                                                </CardContent>
+                                            </Card>
+                                        </Grid>
+                                    ))
+                                ) : (
+                                    <Typography variant="h6" color="error">
+                                        {errorMessage || "No se encontraron productos que coincidan con la búsqueda."}
+                                    </Typography>
+                                )}
+                            </Grid>
 
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))
-                        ) : (
-                            <Typography variant="h6" color="error">
-                                {errorMessage || "No se encontraron productos que coincidan con la búsqueda."}
-                                </Typography>
-                        )}
-                        </Grid>
-        
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                        {Array.isArray(productos) && productos.length > 0 ? (
-
-                            <Pagination
-                                count={Math.ceil(productos.length / productsPerPage)}
-                                page={page}
-                                onChange={handlePageChange}
-                                color="primary"
-                            />
-                        ):(                            
-                        <Typography variant="body2" color="textSecondary">
-                            No hay productos para mostrar.
-                        </Typography>)}
-                        </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                                {Array.isArray(productos) && productos.length > 0 ? (
+                                    <Pagination
+                                        count={Math.ceil(productos.length / productsPerPage)}
+                                        page={page}
+                                        onChange={handlePageChange}
+                                        color="primary"
+                                    />
+                                ) : null}
+                            </Box>
                         </>
-                        )}
-                    </Grid>
+                    )}
+                </Grid>
+
                 </Grid>
                 
                 {/* Modal de comparación */}

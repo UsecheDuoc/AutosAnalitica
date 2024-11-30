@@ -16,12 +16,13 @@ export const fetchWithFallback = async (endpoint) => {
   try {
     console.log(`Intentando con la URL principal: ${primaryUrl}`);
 
-    const response = await axios.get(primaryUrl, { timeout: 6000 }); // Agregar tiempo de espera de 5 segundos
+    //const response = await axios.get(primaryUrl); // Agregar tiempo de espera de 5 segundos
+    const response = await axios.get(primaryUrl, { timeout: 5000 }); // Agregar tiempo de espera de 5 segundos
 
-    // Si el estado es 304, intentamos con la alternativa
+    // Si el estado no es 200, intentamos con la alternativa
     if (response.status !== 200) {
       console.warn(`Código de estado 304 detectado. Probando con la URL alternativa: ${alternativeUrl}`);
-      const alternativeResponse = await axios.get(`${alternativeUrl}${endpoint}`, { timeout: 5000 });
+      const alternativeResponse = await axios.get(`${alternativeUrl}${endpoint}`);
       if (alternativeResponse.status !== 200) {
         console.warn("FALLARON AMBAS CONSULTA", alternativeResponse.error);
       }
@@ -33,14 +34,16 @@ export const fetchWithFallback = async (endpoint) => {
     console.error(`Error con la URL principal (${primaryUrl}), intentando la alternativa...`, error);
 
     // Si falla, intenta con la URL alternativa
-    /* try {
+     try {
       console.log(`Intentando con la URL alternativa: ${alternativeUrl}`);
 
-      const alternativeResponse = await axios.get(`${alternativeUrl}${endpoint}`, { timeout: 5000 }); // Tiempo de espera de 5 segundos
+      //const alternativeResponse = await axios.get(`${alternativeUrl}${endpoint}`); // Tiempo de espera de 5 segundos
+      const alternativeResponse = await axios.get(`${alternativeUrl}${endpoint}`, { timeout: 15000 }); // Tiempo de espera de 5 segundos
+
       return alternativeResponse.data;
     } catch (altError) {
       console.error("Error con ambas URLs:", altError);
       throw new Error("Ambas URLs fallaron.");
-    } */
+    } 
   }
 };
