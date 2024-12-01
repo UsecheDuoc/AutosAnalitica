@@ -208,10 +208,6 @@ function CategoryPage() {
     }, [brandFilter, modelFilter, discountFilter, storeFilter, categoryFilter]);
     
 
-
-
-
-
     //PRUEBA TRAYENDO LA LOGICA DE FILTROS DESDE SEARCHRESULTS:JS
 /*     useEffect(() => {
         console.warn('SEGUNDO EFECTO')
@@ -231,7 +227,6 @@ function CategoryPage() {
     }, [location.search]); */
 
 
-    
         // Leer parámetros de búsqueda desde la URL
         useEffect(() => {
             //console.warn('TERCER EFECTO')
@@ -470,7 +465,6 @@ function CategoryPage() {
         return logo ? logo.src : null; // Devuelve la URL del logo o null si no se encuentra
     };
 
-
     
     /*if (isLoading) {
         return <Typography variant="h6" align="center">Cargando producto...</Typography>;
@@ -485,6 +479,8 @@ function CategoryPage() {
     ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
     : [];
     console.log('Productos con paginated:',paginatedProducts)
+
+
     return (
             <Container maxWidth="lg" sx={{ mt: 1 }}>
                             {/* Sección de fondo y filtros */}

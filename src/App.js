@@ -29,6 +29,7 @@ function App() {
                                 <Route path="/product/:id" element={<ProductDetails />} /> {/* Ruta para detalles del producto */}
                                 <Route path="/graficos" element={<Dashboard />} /> {/* Nueva ruta para Dashboard */}
                                 <Route path="*" element={<NotFoundPage />} /> {/* Ruta 404 */}
+
                             </Routes>
                     </main>
                     <FooterComponent />
