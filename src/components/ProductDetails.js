@@ -96,7 +96,7 @@ function ProductDetails() {
     useEffect(() => {
         const fetchData = async () => {
             const productRequest = await fetchWithFallback(`/productos/${encodeURIComponent(id)}`);
-            const similarProductsRequest = fetchWithFallback(`/productos/buscar-similares?id=${id}`);
+            const similarProductsRequest = fetchWithFallback(`/productos/similares-por-categoria/${id}`);
             const relatedProductsRequest = fetchWithFallback(`/productos/relacionados/${id}`);
     
             const results = await Promise.allSettled([
@@ -161,13 +161,13 @@ function ProductDetails() {
     }, [id]);
 
     {/* Descuento de productos */}
-    useEffect(() => {
+/*     useEffect(() => {
         fetchWithFallback(`/productos/productos-con-descuento`)
             .then(response => {
                 setProductos(response.data); // `descuento` y `aumento` ahora están disponibles en cada producto
             })
             .catch(error => console.error("Error al obtener productos:", error));
-    }, []);
+    }, []); */
     //const productosConDescuento = productos.filter(producto => producto.descuento > 0);
 
   
@@ -1021,90 +1021,90 @@ function ProductDetails() {
 
 
             {/* Productos Destacados */}
-{/* Productos Destacados */}
-<Box
-    sx={{
-        bgcolor: '#f0f0f0',
-        borderRadius: 2,
-        p: 1,
-        mb: 5,
-    }}
->
-    <div className="mt-8 px-4 relative">
-        <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
-
-        {isLoadingDestacados ? (
-            // Mostrar mensaje de carga
-            <Typography variant="body2" align="center" color="textSecondary">
-                Cargando productos destacados...
-            </Typography>
-        ) : errorDestacados ? (
-            // Mostrar mensaje de error
-            <Typography variant="body2" align="center" color="error">
-                {errorDestacados}
-            </Typography>
-        ) : Array.isArray(productosDestacados) && productosDestacados.length > 0 ? (
-            // Mostrar slider solo si hay productos destacados
-            <Slider
-                {...settings}
-                arrows={false} // Eliminamos las flechas
-                autoplay={true} // Activamos el desplazamiento automático
-                autoplaySpeed={2000} // Intervalo de 2 segundos
+            {/* Productos Destacados */}
+            <Box
+                sx={{
+                    bgcolor: '#f0f0f0',
+                    borderRadius: 2,
+                    p: 1,
+                    mb: 5,
+                }}
             >
-                {productosDestacados.map((producto, index) => (
-                    <div key={index} className="px-2">
-                        <Link
-                            to={`/product/${producto._id}`}
-                            style={{ textDecoration: 'none', color: 'inherit' }}
-                        >
-                            {/* Enlace al ProductDetails.js con el ID */}
-                            <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
-                                <CardMedia
-                                    component="img"
-                                    image={producto.imagenUrl || 'https://via.placeholder.com/200'}
-                                    alt={producto.nombre}
-                                    sx={{
-                                        width: '100%', // Ajusta al ancho del contenedor
-                                        height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
-                                        objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
-                                        borderRadius: '8px', // Opcional: redondea los bordes
-                                        backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
-                                        padding: '10px', // Opcional: espacio interno
-                                    }}
-                                />
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-lg">{producto.nombre}</h3>
-                                    <p className="text-green-500 font-bold mt-2">
-                                        ${producto.precio_actual.toLocaleString("es-CL")}
-                                    </p>
+                <div className="mt-8 px-4 relative">
+                    <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
 
-                                    {/* Descuento */}
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
-                                            fontWeight: 'bold', // Negrita para resaltar
-                                            textAlign: 'center', // Centrado del texto
-                                        }}
+                    {isLoadingDestacados ? (
+                        // Mostrar mensaje de carga
+                        <Typography variant="body2" align="center" color="textSecondary">
+                            Cargando productos destacados...
+                        </Typography>
+                    ) : errorDestacados ? (
+                        // Mostrar mensaje de error
+                        <Typography variant="body2" align="center" color="error">
+                            {errorDestacados}
+                        </Typography>
+                    ) : Array.isArray(productosDestacados) && productosDestacados.length > 0 ? (
+                        // Mostrar slider solo si hay productos destacados
+                        <Slider
+                            {...settings}
+                            arrows={false} // Eliminamos las flechas
+                            autoplay={true} // Activamos el desplazamiento automático
+                            autoplaySpeed={2000} // Intervalo de 2 segundos
+                        >
+                            {productosDestacados.map((producto, index) => (
+                                <div key={index} className="px-2">
+                                    <Link
+                                        to={`/product/${producto._id}`}
+                                        style={{ textDecoration: 'none', color: 'inherit' }}
                                     >
-                                        {producto.descuentoRelativo
-                                            ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
-                                            : 'Sin descuento'}
-                                    </Typography>
+                                        {/* Enlace al ProductDetails.js con el ID */}
+                                        <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
+                                            <CardMedia
+                                                component="img"
+                                                image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                                alt={producto.nombre}
+                                                sx={{
+                                                    width: '100%', // Ajusta al ancho del contenedor
+                                                    height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
+                                                    objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
+                                                    borderRadius: '8px', // Opcional: redondea los bordes
+                                                    backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
+                                                    padding: '10px', // Opcional: espacio interno
+                                                }}
+                                            />
+                                            <div className="p-4">
+                                                <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                                                <p className="text-green-500 font-bold mt-2">
+                                                    ${producto.precio_actual.toLocaleString("es-CL")}
+                                                </p>
+
+                                                {/* Descuento */}
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
+                                                        fontWeight: 'bold', // Negrita para resaltar
+                                                        textAlign: 'center', // Centrado del texto
+                                                    }}
+                                                >
+                                                    {producto.descuentoRelativo
+                                                        ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
+                                                        : 'Sin descuento'}
+                                                </Typography>
+                                            </div>
+                                        </div>
+                                    </Link>
                                 </div>
-                            </div>
-                        </Link>
-                    </div>
-                ))}
-            </Slider>
-        ) : (
-            // Mostrar mensaje si no hay productos destacados
-            <Typography variant="body2" color="textSecondary" align="center">
-                No hay productos destacados disponibles.
-            </Typography>
-        )}
-    </div>
-</Box>
+                            ))}
+                        </Slider>
+                    ) : (
+                        // Mostrar mensaje si no hay productos destacados
+                        <Typography variant="body2" color="textSecondary" align="center">
+                            No hay productos destacados disponibles.
+                        </Typography>
+                    )}
+                </div>
+            </Box>
 
 
 
