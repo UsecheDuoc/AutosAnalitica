@@ -1,12 +1,12 @@
 // src/constants.js o src/config/constants.js
 
 export const initialMarcas = [
-    "BAIC",
+    "BAIC",//
     "Brilliance",
-    "Changan",
-    "Chery",
-    "Chevrolet",
-    "Chrysler",
+    "Changan",//
+    "Chery",//
+    "Chevrolet",//
+    "Chrysler",//
     "Citroën",
     "DFM",
     "DFSK",
@@ -19,16 +19,16 @@ export const initialMarcas = [
     "Great Wall",
     "Honda",
     "Hyundai",
-    "JAC",
+    "JAC",//
     "Jaguar",
-    "Kia",
+    "Kia",//
     "Lifan",
     "Mahindra",
-    "Maxus",
+    "Maxus",//
     "Mazda",
     "MG",
     "Mitsubishi",
-    "Nissan",
+    "Nissan",//
     "Opel",
     "Peugeot",
     "Renault",
@@ -36,7 +36,7 @@ export const initialMarcas = [
     "Skoda",
     "SsangYong",
     "Suzuki",
-    "Toyota",
+    "Toyota",//
     "Volkswagen",
     "Zotye",
 ];

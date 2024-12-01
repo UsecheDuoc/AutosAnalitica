@@ -17,7 +17,7 @@ export const fetchWithFallback = async (endpoint) => {
     console.log(`Intentando con la URL principal: ${primaryUrl}`);
 
     //const response = await axios.get(primaryUrl); // Agregar tiempo de espera de 5 segundos
-    const response = await axios.get(primaryUrl, { timeout: 5000 }); // Agregar tiempo de espera de 5 segundos
+    const response = await axios.get(primaryUrl, { timeout: 15000 }); // Agregar tiempo de espera de 5 segundos
 
     // Si el estado no es 200, intentamos con la alternativa
     if (response.status !== 200) {

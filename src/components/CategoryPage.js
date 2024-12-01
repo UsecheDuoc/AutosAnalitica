@@ -274,10 +274,10 @@ function CategoryPage() {
             setIsLoading(true); // Inicia el estado de carga        
             setErrorMessage(null); // Reiniciar el error antes de hacer una nueva solicitud
 
-            if (!params.marca && !params.modelo && !params.categoria && !params.nombre&& !params.tienda) {
+/*             if (!params.marca && !params.modelo && !params.categoria && !params.nombre&& !params.tienda) {
                 console.log("No hay parámetros válidos para ejecutar fetchProducts.");
                 return;
-            }
+            } */
 
             try {
                 const response = await fetchWithFallback(`/productos/buscar-similares?marca=${encodeURIComponent(params.marca || '')}&modelo=${encodeURIComponent(params.modelo || '')}&categoria=${encodeURIComponent(params.categoria || '')}&nombre=${encodeURIComponent(params.nombre || '')}&empresa_procedencia=${encodeURIComponent(params.tienda || '')}`);
@@ -290,11 +290,12 @@ function CategoryPage() {
                 } else {
                     setErrorMessage(null); // Limpia cualquier mensaje de error
                     setProductos(response);
+
                 }
                                 
             } catch (error) {
                 console.error("Error al obtener productos:", error);
-                setErrorMessage(error.response?.message || "Hubo un error al obtener los productos.");
+                setErrorMessage(error.response?.message || "No se encontraron productos que coincidan con la búsqueda.");
                 setProductos([]); // Limpia los productos en caso de error
             } finally {
                 setIsLoading(false); // Finaliza el estado de carga
@@ -347,11 +348,6 @@ function CategoryPage() {
     };
     
     const fetchProductosPorMarca = async (nombreMarca) => {
-        console.log('Contador: ',counter)
-        if (counter >= 1) {
-            console.log("Efecto ya ejecutado una vez, no se ejecutará de nuevo.");
-            return; // Salir si el contador supera el límite
-        }else{
             //console.warn('Entreeeee')
             // Incrementar el contador después de ejecutar el efecto
             //setCounter((prev) => prev + 1);
@@ -370,7 +366,6 @@ function CategoryPage() {
                 console.error("Error al obtener productos por marca:", error);
                 setErrorMessage("No se encontraron productos para la marca seleccionada.");
             }
-            };
         }
          
     //Seccion de filtros
@@ -489,7 +484,7 @@ function CategoryPage() {
     const paginatedProducts = Array.isArray(productos)
     ? productos.slice((page - 1) * productsPerPage, page * productsPerPage)
     : [];
-
+    console.log('Productos con paginated:',paginatedProducts)
     return (
             <Container maxWidth="lg" sx={{ mt: 1 }}>
                             {/* Sección de fondo y filtros */}
@@ -820,7 +815,7 @@ function CategoryPage() {
                                                             right: 8,
                                                             bgcolor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco semitransparente
                                                             borderRadius: '50%', // Checkbox circular
-                                                            boxShadow: 1, // Sombra para destacar el checkbox
+                                                            boxShadow: 1, // Sombra para    r el checkbox
                                                             '&.Mui-checked': {
                                                                 color: '#1976d2', // Color al estar seleccionado
                                                             },
@@ -883,9 +878,21 @@ function CategoryPage() {
                                         </Grid>
                                     ))
                                 ) : (
-                                    <Typography variant="h6" color="error">
-                                        {errorMessage || "No se encontraron productos que coincidan con la búsqueda."}
-                                    </Typography>
+                                // Mostrar mensaje de "no productos" si no hay resultados
+                                <Box
+                                sx={{
+                                    mt: 4,
+                                    textAlign: 'center',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '50vh',
+                                }}
+                                >
+                                <Typography variant="h6" color="error">
+                                    No se encontraron productos que coincidan con la búsqueda.
+                                </Typography>
+                                </Box>
                                 )}
                             </Grid>
 

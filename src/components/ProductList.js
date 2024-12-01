@@ -72,7 +72,9 @@
         const [isSearchLoading, setIsSearchLoading] = useState(false);
         const [searchErrorMessage, setSearchErrorMessage] = useState('');
         const [openSnackbar, setOpenSnackbar] = useState(false);
-
+        const [isLoadingDestacados, setIsLoadingDestacados] = useState(false);
+        const [errorDestacados, setErrorDestacados] = useState(null);
+        
 
 
         const [selectedFilters, setSelectedFilters] = useState({
@@ -369,14 +371,22 @@
         }, []);
     
         const fetchProductosDestacados = async () => {
+            setIsLoadingDestacados(true);
+            setErrorDestacados(null);
             try {
                 const response = await fetchWithFallback(`/productos/destacados-descuento`);
-                console.log('Productos destacados que trae la apo:',response)
-                setProductosDestacados(response);
+                if (!response || response.length === 0) {
+                    setErrorDestacados("No hay productos destacados disponibles.");
+                } else {
+                    console.log('Productos destacados que trae la apo:',response)
 
+                    setProductosDestacados(response);
+                }
             } catch (error) {
                 console.error("Error al obtener productos destacados:", error.message);
                 setErrorMessage("No se pudieron cargar los productos destacados.");
+            } finally {
+                setIsLoadingDestacados(false);
             }
         };
 
@@ -1314,77 +1324,92 @@
 
 
 
-                    {/* Productos Destacados */}
-                    <Box 
-                    sx={{ bgcolor: '#f0f0f0',
+                {/* Productos Destacados */}
+                <Box
+                    sx={{
+                        bgcolor: '#f0f0f0',
                         borderRadius: 2,
-                        p:1 ,
+                        p: 1,
                         mb: 5,
-                     }}
-                    >
-                        <div className="mt-8 px-4 relative">
-                        <h2 className="text-2xl font-bold mb-4">
-                            Productos Destacados
-                        </h2>
-                        <Slider
-                            {...settings}
-                            arrows={false} // Eliminamos las flechas
-                            autoplay={true} // Activamos el desplazamiento automático
-                            autoplaySpeed={2000} // Intervalo de 2 segundos
-                        >
-                            
-                            {Array.isArray(productosDestacados) && productosDestacados.length > 0 ? (
-                            productosDestacados.map((producto, index) => (                               
-                                <div key={index} className="px-2">
-                                    <Link to={`/product/${producto._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                        {/* Enlace al ProductDetails.js con el ID */}
-                                        <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
-                                        <CardMedia
-                                            component="img"
-                                            image={producto.imagenUrl || 'https://via.placeholder.com/200'}
-                                            alt={producto.nombre}
-                                            sx={{
-                                                width: '100%', // Ajusta al ancho del contenedor
-                                                height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
-                                                objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
-                                                borderRadius: '8px', // Opcional: redondea los bordes
-                                                backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
-                                                padding: '10px', // Opcional: espacio interno
-                                            }}
-                                        />
-                                            <div className="p-4">
-                                                <h3 className="font-semibold text-lg">{producto.nombre}</h3>
-                                                <p className="text-green-500 font-bold mt-2">
-                                                    ${producto.precio_actual.toLocaleString("es-CL")}
-                                                </p>
+                    }}
+                >
+                    <div className="mt-8 px-4 relative">
+                        <h2 className="text-2xl font-bold mb-4">Productos Destacados</h2>
 
-                                                {/*Descuento*/}
-                                                <Typography
-                                                    variant="body2"
+                        {isLoadingDestacados ? (
+                            // Mostrar mensaje de carga
+                            <Typography variant="body2" align="center" color="textSecondary">
+                                Cargando productos destacados...
+                            </Typography>
+                        ) : errorDestacados ? (
+                            // Mostrar mensaje de error
+                            <Typography variant="body2" align="center" color="error">
+                                {errorDestacados}
+                            </Typography>
+                        ) : Array.isArray(productosDestacados) && productosDestacados.length > 0 ? (
+                            // Mostrar slider solo si hay productos destacados
+                            <Slider
+                                {...settings}
+                                arrows={false} // Eliminamos las flechas
+                                autoplay={true} // Activamos el desplazamiento automático
+                                autoplaySpeed={2000} // Intervalo de 2 segundos
+                            >
+                                {productosDestacados.map((producto, index) => (
+                                    <div key={index} className="px-2">
+                                        <Link
+                                            to={`/product/${producto._id}`}
+                                            style={{ textDecoration: 'none', color: 'inherit' }}
+                                        >
+                                            {/* Enlace al ProductDetails.js con el ID */}
+                                            <div className="bg-white shadow-md rounded-lg overflow-hidden text-center">
+                                                <CardMedia
+                                                    component="img"
+                                                    image={producto.imagenUrl || 'https://via.placeholder.com/200'}
+                                                    alt={producto.nombre}
                                                     sx={{
-                                                        color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
-                                                        fontWeight: 'bold', // Negrita para resaltar
-                                                        textAlign: 'center', // Centrado del texto
+                                                        width: '100%', // Ajusta al ancho del contenedor
+                                                        height: { xs: '120px', sm: '150px', md: '200px' }, // Altura variable por pantalla
+                                                        objectFit: 'contain', // Ajusta la imagen dentro del contenedor sin recortar
+                                                        borderRadius: '8px', // Opcional: redondea los bordes
+                                                        backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
+                                                        padding: '10px', // Opcional: espacio interno
                                                     }}
-                                                >
-                                                    {producto.descuentoRelativo
-                                                        ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
-                                                        : 'Sin descuento'}
-                                                </Typography>
+                                                />
+                                                <div className="p-4">
+                                                    <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                                                    <p className="text-green-500 font-bold mt-2">
+                                                        ${producto.precio_actual.toLocaleString("es-CL")}
+                                                    </p>
 
+                                                    {/* Descuento */}
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: producto.descuentoRelativo ? 'red' : 'gray', // Rojo si hay descuento
+                                                            fontWeight: 'bold', // Negrita para resaltar
+                                                            textAlign: 'center', // Centrado del texto
+                                                        }}
+                                                    >
+                                                        {producto.descuentoRelativo
+                                                            ? `Descuento: ${Math.round(producto.descuentoRelativo)}%` // Redondea y agrega el símbolo %
+                                                            : 'Sin descuento'}
+                                                    </Typography>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                </div>
-                                ))
-                            ) : (
-                                <Typography variant="body2" sx={{ textAlign: 'center', color: 'gray' }}>
-                                    No hay productos destacados disponibles.
-                                </Typography>
-                            )}
-                        </Slider>
-                        </div>
-                    </Box>
+                                        </Link>
+                                    </div>
+                                ))}
+                            </Slider>
+                        ) : (
+                            // Mostrar mensaje si no hay productos destacados
+                            <Typography variant="body2" color="textSecondary" align="center">
+                                No hay productos destacados disponibles.
+                            </Typography>
+                        )}
+                    </div>
+                </Box>
+
+
 
 
                    
