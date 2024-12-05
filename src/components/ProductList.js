@@ -41,11 +41,11 @@
         { nombre: 'Chevrolet', imageUrl: 'https://www.shutterstock.com/image-vector/chattogram-bangladesh-may-29-2023-600nw-2309781029.jpg' },
         { nombre: 'Changan', imageUrl: 'https://1000marcas.net/wp-content/uploads/2021/02/Changan-Logo-2016.png' },
         { nombre: 'Maxus', imageUrl: 'https://www.msrepuestos.cl/cdn/shop/collections/MAXUS.png?v=1719593851&width=1296' },
-        { nombre: 'Foton', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyo0MGZ0AAKTm9_9ux1S1u1D7f-DgrTRvlIA&s' },
-        { nombre: 'Volkswagen', imageUrl: 'https://cdn.autobild.es/sites/navi.axelspringer.es/public/media/image/2019/04/logotipo-volkswagen-historia_21.jpg?tf=3840x' },
+        { nombre: 'Kia', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvjimzPYH9ofJE9c8tBEvdjArbQrcATylsmQ&s' },
+        { nombre: 'Nissan', imageUrl: 'https://cdn.worldvectorlogo.com/logos/nissan-6.svg' },
         { nombre: 'Hyundai', imageUrl: 'https://logodownload.org/wp-content/uploads/2014/05/hyundai-logo-3.png' },
-        { nombre: 'BMW', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/1200px-BMW.svg.png' },
-        { nombre: 'Audi', imageUrl: 'https://e7.pngegg.com/pngimages/905/811/png-clipart-audi-logo-audi-logo-transport-cars.png' },
+        { nombre: 'Baic', imageUrl: 'https://www.rutamotor.com/wp-content/uploads/2023/07/logo-baic.png' },
+        { nombre: 'Jac', imageUrl: 'https://dercocenteraxs.cl/datos/marcas-autos/marca-auto-jac.png' },
 
         // Más marcas...
     ];
