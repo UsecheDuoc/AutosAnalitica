@@ -1,101 +1,107 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Box, Typography } from "@mui/material";
-import { fetchWithFallback } from "../../utils/api"; // Usa el fetch con fallback
 import Plot from "react-plotly.js";
+import { fetchWithFallback } from "../../utils/api";
 
 const GraficoClustering = () => {
-    const [datos, setDatos] = useState([]);
+  const [datos, setDatos] = useState([]);
 
-    useEffect(() => {
-        // Llamada al endpoint para obtener los datos
-        const fetchData = async () => {
-            try {
-                const datos = await fetchWithFallback("/grafico/metodo_codo"); // Cambia al endpoint correcto
-                setDatos(datos); // Asegúrate de que "datos" exista en la respuesta
-                console.log('Informacion que trae grfico de codo:',datos)
+  // Valores específicos para las marcas y categorías
+  const marcasEspecificas = [2, 3, 4, 5, 6, 7, 8, 9 ]; // Valores de marcas del dataset
+  const nombresMarcas = ["Chery", "Chevrolet", "Chrysler", "JAC", "Kia","Maxus","Nissan","Toyota"]; // Nombres de marcas
+  const categoriasEspecificas = [10, 15, 20, 25, 30, 35, 40]; // Valores de categorías del dataset
+  const nombresCategorias = ["Motores", "Cables", "Carroceria", "Correas","Luces", "Distribución","Espejos"]; // Nombres de categorías
 
-                if (datos.length > 0 && datos[0].datos) {
-                    setDatos(datos[0].datos); // Accede al array "datos" dentro del primer objeto
-                    console.log("Datos cargados para el gráfico:", datos[0].datos);
-                } else {
-                    console.error("La respuesta no contiene el campo 'datos' esperado.");
-                }
-                
-            } catch (error) {
-                console.error("Error al obtener los datos:", error);
-            }
-        };
+  useEffect(() => {
+    const fetchData = async () => {     
+      try {
+        const response = await fetchWithFallback("/grafico/metodo_codo");
+        const data = response;
 
-        fetchData();
-    }, []);
+        console.log("Datos recibidos del servidor:", data);
 
-    // Configuración del gráfico 3D
-    const trace = {
-        x: datos.map((d) => d.precio), // Eje X: Precio
-        y: datos.map((d) => d.categoria), // Eje Y: Categoría
-        z: datos.map((d) => d.marca), // Eje Z: Marca
-        mode: "markers",
-        type: "scatter3d",
-        marker: {
-            size: 8, // Tamaño de los puntos
-            color: datos.map((d) => d.cluster), // Color dinámico basado en el clúster
-            colorscale: "Viridis", // Paleta de colores
-            opacity: 0.8,
-        },
+        if (data && data.length > 0 && data[0].datos) {
+          setDatos(data[0].datos); // Extrae los datos del primer objeto
+          console.log("Datos procesados para el gráfico:", data[0].datos);
+        } else {
+          console.error("No se encontraron datos válidos.");
+        }
+      } catch (error) {
+        console.error("Error al obtener los datos:", error);
+      }
     };
 
-    return (
-        <Box     
-            sx={{
-                backgroundColor: "white",
-                boxShadow: 3,
-                borderRadius: 2,
-                p: 4,
-                maxWidth: "100%", // Limita el ancho
-                height: "auto",
-                display: "flex",
-                flexDirection: "column", // Alinea contenido verticalmente
-                alignItems: "center", // Centra el contenido
-            }}
-        >
-            {/* Gráfico 3D */}
-            {datos.length > 0 ? (
-                    <Plot
-                        data={[trace]}
-                        layout={{
-                            title: "Clustering en 3D",
-                            scene: {
-                                xaxis: { title: "Precio" },
-                                yaxis: { title: "Categoría" },
-                                zaxis: { title: "Marca" },
-                            },
-                            margin: { l: 0, r: 0, t: 30, b: 0 }, // Reduce márgenes para maximizar el espacio
-                            height: 600, // Aumenta la altura del gráfico
-                            width: "100%", // Ocupa todo el ancho del contenedor
-                        }}
-                        useResizeHandler
-                        style={{ width: "100%", height: "100%" }} // Hace que el gráfico sea responsivo
-                    />
-            ) : (
-                <Typography variant="body1" align="center">
-                    No se encontraron datos.
-                </Typography>
-            )}
+    fetchData();
+  }, []);
 
+  // Configuración del gráfico 3D
+  const trace = {
+    x: datos.map((d) => d.precio), // Eje X: Precio
+    y: datos.map((d) => d.marca), // Eje Y: Marcas
+    z: datos.map((d) => d.categoria), // Eje Z: Categorías
+    mode: "markers",
+    type: "scatter3d",
+    marker: {
+      size: 8,
+      color: datos.map((d) => d.cluster), // Diferenciación por clúster
+      colorscale: "Viridis",
+      opacity: 0.8,
+    },
+    name: "Clusters",
+  };
 
-            {/* Texto explicativo del gráfico */}
-            <Typography variant="body1" sx={{ mb: 3, color: "gray", textAlign: "center" }}>
-                Este gráfico muestra la agrupación de productos en función de su precio, categoría y marca.
-            
-            
-            
-            
-            
-            </Typography>
-        </Box>
-    );
+  return (
+    <Box
+      sx={{
+        backgroundColor: "white",
+        boxShadow: 3,
+        borderRadius: 2,
+        p: 4,
+        maxWidth: "100%",
+        height: "auto",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      {datos.length > 0 ? (
+        <Plot
+          data={[trace]}
+          layout={{
+            title: "Clustering en 3D",
+            scene: {
+              xaxis: {
+                title: "Precio",
+              },
+              yaxis: {
+                title: "Marca",
+                tickvals: marcasEspecificas,
+                ticktext: nombresMarcas,
+              },
+              zaxis: {
+                title: "Categoría",
+                tickvals: categoriasEspecificas,
+                ticktext: nombresCategorias,
+              },
+            },
+            margin: { l: 0, r: 0, t: 30, b: 0 },
+            height: 600,
+            width: "100%",
+          }}
+          useResizeHandler
+          style={{ width: "100%", height: "100%" }}
+        />
+      ) : (
+        <Typography variant="body1" align="center">
+          No se encontraron datos.
+        </Typography>
+      )}
+
+      <Typography variant="body1" sx={{ mb: 3, color: "gray", textAlign: "center" }}>
+      Gráfico de 7 clústeres, identifica grupos específicos, ideal para diseñar estrategias diferenciadas y captar nichos de mercado con necesidades concretas.      </Typography>
+    </Box>
+  );
 };
 
 export default GraficoClustering;
+

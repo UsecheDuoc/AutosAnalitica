@@ -1355,7 +1355,20 @@
                                 autoplaySpeed={2000} // Intervalo de 2 segundos
                             >
                                 {productosDestacados.map((producto, index) => (
-                                    <div key={index} className="px-2">
+                                    <div 
+                                    key={index}
+                                    className="px-2"
+                                    style={{
+                                        margin: '10px', // Espaciado uniforme entre tarjetas
+                                        maxWidth: '220px', // Tamaño fijo para las tarjetas
+                                        height: '320px', // Altura uniforme
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                    }}
+                                    >
+
+
                                         <Link
                                             to={`/product/${producto._id}`}
                                             style={{ textDecoration: 'none', color: 'inherit' }}
@@ -1373,13 +1386,37 @@
                                                         borderRadius: '8px', // Opcional: redondea los bordes
                                                         backgroundColor: '#f5f5f5', // Opcional: fondo para imágenes transparentes
                                                         padding: '10px', // Opcional: espacio interno
+                                                        marginBottom: '10px',
+
                                                     }}
                                                 />
                                                 <div className="p-4">
-                                                    <h3 className="font-semibold text-lg">{producto.nombre}</h3>
-                                                    <p className="text-green-500 font-bold mt-2">
-                                                        ${producto.precio_actual.toLocaleString("es-CL")}
-                                                    </p>
+                                                <Typography
+                                                    variant="subtitle1"
+                                                    sx={{
+                                                        fontWeight: 'bold',
+                                                        fontSize: { xs: '0.8rem', sm: '1rem', md: '1.2rem' },
+                                                        whiteSpace: 'normal',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 2, // Controla el número de líneas visibles (2 líneas en este caso)
+                                                        WebkitBoxOrient: 'vertical',
+                                                    }}
+                                                >
+                                                    {producto.nombre}
+                                                </Typography>         
+                                                <Typography
+                                                    variant="body1"
+                                                    sx={{
+                                                        color: 'green',
+                                                        fontWeight: 'bold',
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(producto.precio_actual)}
+                                                </Typography>
+
 
                                                     {/* Descuento */}
                                                     <Typography

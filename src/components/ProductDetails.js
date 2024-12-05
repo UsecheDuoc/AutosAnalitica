@@ -441,17 +441,24 @@ function ProductDetails() {
 
     // Definir las variables para el cálculo de descuento o aumento
     // Calcular el último precio en el historial de precios y el cambio porcentual
-    const lastPrice = producto.historial_precios?.length
+// Obtener el penúltimo precio del historial
+const lastPrice = producto.historial_precios?.length
     ? producto.historial_precios
           .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-          .at(-2)?.precio//Prnultimo precio del array historial
+          .at(-1)?.precio // Penúltimo precio del array historial
     : null;
 
-    //formula para calcular el porcentaje de cambio respoecto al penultimo precio
-    const priceDifference = lastPrice !== null ? producto.precio_actual - lastPrice : 0;
-    const percentageChange =
+// Calcular la diferencia de precios
+const priceDifference =
     lastPrice !== null
-        ? Math.round(Math.abs(priceDifference / lastPrice) * 100)
+        ? parseInt(producto.precio_actual.toString().replace(/\./g, ''), 10) -
+          parseInt(lastPrice.toString().replace(/\./g, ''), 10)
+        : 0;
+
+// Calcular el cambio porcentual
+const percentageChange =
+    lastPrice !== null
+        ? Math.round(Math.abs(priceDifference / parseInt(lastPrice.toString().replace(/\./g, ''), 10)) * 100)
         : 0;
 
     
@@ -467,7 +474,7 @@ function ProductDetails() {
         ? `Bajó: ${percentageChange}%`
         : "Sin cambios";
 
-
+ 
 
     const settings = {
         dots: false,
@@ -631,15 +638,29 @@ function ProductDetails() {
                     {estado || 'Estado no disponible'}
                 </Typography>
 
-                <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
+                <Typography
+                    variant="h6"
+                    color="primary"
+                    sx={{ mb: 2 }}
+                >
                     Precio:{' '}
                     {producto.precio_actual
-                    ? producto.precio_actual.toLocaleString('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        })
-                    : '-'}
+                        ? (() => {
+                            // Normalizar el valor a un número, eliminando puntos si es necesario
+                            const numericValue =
+                                typeof producto.precio_actual === 'string'
+                                    ? parseInt(producto.precio_actual.replace(/\./g, ''), 10)
+                                    : producto.precio_actual;
+
+                            // Formatear el valor a CLP
+                            return new Intl.NumberFormat('es-CL', {
+                                style: 'currency',
+                                currency: 'CLP',
+                            }).format(numericValue);
+                        })()
+                        : '-'}
                 </Typography>
+
 
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
@@ -990,7 +1011,19 @@ function ProductDetails() {
                 </TableHead>
                 <TableBody>
                     {[
-                    { label: 'Precio', key: 'precio_actual', format: (val) => `$${val?.toLocaleString('es-CL')}` },
+                    { label: 'Precio', key: 'precio_actual',     
+                        format: (val) => {
+                            if (!val) return '-'; // Si el valor es null o undefined, retorna '-'
+                    
+                            // Eliminar puntos si el valor viene como cadena con separadores
+                            const numericValue = typeof val === 'string' 
+                                ? parseInt(val.replace(/\./g, ''), 10) // Convierte "21.990" a 21990
+                                : val;
+                    
+                            // Formatear el valor numérico a CLP
+                            return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(numericValue);
+                        }
+                    },
                     { label: 'Marca', key: 'marca' },
                     { label: 'Modelo', key: 'modelo' },
                     { label: 'Tienda procedencia:', key: 'empresa_procedencia' },
@@ -1073,10 +1106,32 @@ function ProductDetails() {
                                                 }}
                                             />
                                             <div className="p-4">
-                                                <h3 className="font-semibold text-lg">{producto.nombre}</h3>
-                                                <p className="text-green-500 font-bold mt-2">
-                                                    ${producto.precio_actual.toLocaleString("es-CL")}
-                                                </p>
+                                            <Typography
+                                                    variant="subtitle1"
+                                                    sx={{
+                                                        fontWeight: 'bold',
+                                                        fontSize: { xs: '0.8rem', sm: '1rem', md: '1.2rem' },
+                                                        whiteSpace: 'normal',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 3, // Controla el número de líneas visibles (2 líneas en este caso)
+                                                        WebkitBoxOrient: 'vertical',
+                                                    }}
+                                                >
+                                                    {producto.nombre}
+                                                </Typography>                                                  
+                                                <Typography
+                                                    variant="body1"
+                                                    sx={{
+                                                        color: 'green',
+                                                        fontWeight: 'bold',
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(producto.precio_actual)}
+                                                </Typography>
+
 
                                                 {/* Descuento */}
                                                 <Typography

@@ -837,7 +837,27 @@ function CategoryPage() {
                                                         {producto.nombre}
                                                     </Typography>
                                                     <Typography variant="h6" sx={{ mt: 1, color: '#003366' }}>
-                                                        {`$${producto.precio_actual.toLocaleString("es-CL")}`}
+                                                        {(() => {
+                                                            const precio = producto.precio_actual;
+
+                                                            // Si el precio es una cadena y contiene punto pero no símbolo $
+                                                            if (typeof precio === 'string' && !precio.includes('$') && precio.includes('.')) {
+                                                                return `$${precio}`; // Agrega el símbolo $
+                                                            }
+
+                                                            // Si el precio es un número, formatearlo a CLP
+                                                            if (!isNaN(precio)) {
+                                                                return `$${Number(precio).toLocaleString("es-CL")}`;
+                                                            }
+
+                                                            // Si ya contiene el símbolo $, lo devuelve tal cual
+                                                            if (typeof precio === 'string' && precio.includes('$')) {
+                                                                return precio;
+                                                            }
+
+                                                            // Si el precio no es válido, devuelve '-'
+                                                            return '-';
+                                                        })()}
                                                     </Typography>
                                                     <Typography variant="body2">
                                                         <strong>Marca:</strong> {producto.marca || '-'}
